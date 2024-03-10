@@ -1,0 +1,57 @@
+version: "3"
+
+volumes:
+    prometheus_data:
+    redis_data:
+
+services:
+# I wasn't able to make self-hosted prometheus & grafana work with remote write
+# For fastest results, use cloud-hosted solutions suck as Grafana Cloud or Scaleway Cockpit
+#
+#  prometheus:
+#    image: prom/prometheus:v2.49.1
+#    volumes:
+#      - prometheus_data:/prometheus
+#      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+#    command:
+#      - "--config.file=/etc/prometheus/prometheus.yml"
+#      - "--storage.tsdb.path=/prometheus"
+#      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+#      - "--web.console.templates=/usr/share/prometheus/consoles"
+#      - "--web.enable-remote-write-receiver"
+#      - "--enable-feature=remote-write-receiver"
+#    networks:
+#      - mesh-bridge
+#  grafana:
+#    image: grafana/grafana-oss:10.4.0
+#    ports:
+#      - "127.0.0.1:3000:3000"
+#    networks:
+#      - mesh-bridge
+  meshtastic-prometheus-exporter:
+    build: .
+    environment:
+      - MQTT_ADDRESS=mqtt.meshtastic.org
+      - MQTT_USE_TLS=0
+      - MQTT_PORT=1883
+      - MQTT_KEEPALIVE=15
+#      - MQTT_USERNAME=changeme
+#      - MQTT_PASSWORD=changeme
+      - MQTT_TOPIC=msh/EU_433/#
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PROMETHEUS_ENDPOINT=http://grafana/api/v1/push
+#      - PROMETHEUS_TOKEN=changeme
+    networks:
+      - mesh-bridge
+  # Redis is being utilised for storing persistent state
+  redis:
+    image: redis:7
+    volumes:
+      - redis_data:/data
+    networks:
+      - mesh-bridge
+
+networks:
+  mesh-bridge:
+    driver: bridge

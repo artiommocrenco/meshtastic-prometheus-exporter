@@ -1,0 +1,6 @@
+meshtastic_protobufs_community_danielgtaylor_betterproto @ https://buf.build/gen/python/meshtastic-protobufs-community-danielgtaylor-betterproto/meshtastic_protobufs_community_danielgtaylor_betterproto-1.2.5.5.20240216123215+6b07c41c68c9-py3-none-any.whl
+opentelemetry-api==1.23.0
+opentelemetry-exporter-prometheus-remote-write==0.44b0
+opentelemetry-sdk==1.23.0
+paho-mqtt==2.0.0
+redis==5.0.2
