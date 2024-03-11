@@ -448,8 +448,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -558,8 +557,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -635,8 +633,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Meshtastic Packets",
+  "title": "Meshtastic Packets (Net)",
   "uid": "dfe109f7-17b6-467b-97bf-2e9c6508e0fb",
-  "version": 38,
+  "version": 39,
   "weekStart": ""
 }

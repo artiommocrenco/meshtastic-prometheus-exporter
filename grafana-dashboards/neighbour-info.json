@@ -122,7 +122,9 @@
           ],
           "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "single",
@@ -227,7 +229,9 @@
           ],
           "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "single",
@@ -299,6 +303,6 @@
   "timezone": "",
   "title": "Meshtastic Neighbour Info",
   "uid": "a8711380-ea8b-43d3-931a-e7233e8189f0",
-  "version": 9,
+  "version": 10,
   "weekStart": ""
 }
