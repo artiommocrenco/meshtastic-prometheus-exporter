@@ -426,7 +426,7 @@ def on_message(client, userdata, msg):
                 print(neighbour_info)
 
                 node = neighbour_info.node_id
-                telemetry_attributes = {
+                neighbour_info_attributes = {
                     'node': node or 'unknown',
                     'node_long_name': get_decoded_node_metadata_from_redis(node, 'long_name') if node else 'unknown',
                     'node_short_name': get_decoded_node_metadata_from_redis(node, 'short_name') if node else 'unknown',
@@ -434,14 +434,14 @@ def on_message(client, userdata, msg):
                 for n in neighbour_info.neighbors:
                     neighbour_node = n.node_id
 
-                    telemetry_attributes['neighbour_node'] = neighbour_node or 'unknown'
-                    telemetry_attributes['neighbour_node_long_name'] = get_decoded_node_metadata_from_redis(
+                    neighbour_info_attributes['neighbour_node'] = neighbour_node or 'unknown'
+                    neighbour_info_attributes['neighbour_node_long_name'] = get_decoded_node_metadata_from_redis(
                         neighbour_node, 'long_name') if node else 'unknown'
-                    telemetry_attributes['neighbour_node_short_name'] = get_decoded_node_metadata_from_redis(
+                    neighbour_info_attributes['neighbour_node_short_name'] = get_decoded_node_metadata_from_redis(
                         neighbour_node, 'short_name') if node else 'unknown'
 
-                    meshtastic_neighbour_info_snr.set(n.snr, attributes=telemetry_attributes)
-                    meshtastic_neighbour_info_last_rx_time.set(n.last_rx_time, attributes=telemetry_attributes)
+                    meshtastic_neighbour_info_snr.set(n.snr, attributes=neighbour_info_attributes)
+                    meshtastic_neighbour_info_last_rx_time.set(n.last_rx_time, attributes=neighbour_info_attributes)
 
     except Exception as e:
         print(f'Exception in on_message: {e}')
