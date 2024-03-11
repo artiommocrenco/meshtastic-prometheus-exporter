@@ -7,7 +7,7 @@ from sys import stdout
 from time import time
 import paho.mqtt.client as mqtt
 import redis
-from meshtastic import ServiceEnvelope, PortNum, Telemetry, User
+from meshtastic import ServiceEnvelope, PortNum, Telemetry, User, NeighborInfo
 from opentelemetry import metrics
 from opentelemetry.exporter.prometheus_remote_write import (
     PrometheusRemoteWriteMetricsExporter,
@@ -70,6 +70,14 @@ meshtastic_mesh_packet_count = meter.create_counter(
 
 meshtastic_node_info_last_heard = meter.create_gauge(
     name='meshtastic_node_info_last_heard',
+)
+
+meshtastic_neighbour_info_snr = meter.create_gauge(
+    name='meshtastic_neighbour_info_snr',
+)
+
+meshtastic_neighbour_info_last_rx_time = meter.create_gauge(
+    name='meshtastic_neighbour_info_last_rx_time',
 )
 
 meshtastic_telemetry_device_battery_level = meter.create_gauge(
@@ -411,6 +419,30 @@ def on_message(client, userdata, msg):
                         telemetry.power_metrics.ch3_current,
                         attributes=telemetry_attributes
                     )
+
+            if envelope.packet.decoded.portnum == PortNum.NEIGHBORINFO_APP:
+                print(f'Appears to be Neighbour Info')
+                neighbour_info = NeighborInfo().parse(envelope.packet.decoded.payload)
+                print(neighbour_info)
+
+                node = neighbour_info.node_id
+                telemetry_attributes = {
+                    'node': node or 'unknown',
+                    'node_long_name': get_decoded_node_metadata_from_redis(node, 'long_name') if node else 'unknown',
+                    'node_short_name': get_decoded_node_metadata_from_redis(node, 'short_name') if node else 'unknown',
+                }
+                for n in neighbour_info.neighbors:
+                    neighbour_node = n.node_id
+
+                    telemetry_attributes['neighbour_node'] = neighbour_node or 'unknown'
+                    telemetry_attributes['neighbour_node_long_name'] = get_decoded_node_metadata_from_redis(
+                        neighbour_node, 'long_name') if node else 'unknown'
+                    telemetry_attributes['neighbour_node_short_name'] = get_decoded_node_metadata_from_redis(
+                        neighbour_node, 'short_name') if node else 'unknown'
+
+                    meshtastic_neighbour_info_snr.set(n.snr, attributes=telemetry_attributes)
+                    meshtastic_neighbour_info_last_rx_time.set(n.last_rx_time, attributes=telemetry_attributes)
+
     except Exception as e:
         print(f'Exception in on_message: {e}')
 
