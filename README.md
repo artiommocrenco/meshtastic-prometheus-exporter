@@ -9,6 +9,8 @@
 | meshtastic_mesh_packet_priority                      | histogram |
 | meshtastic_mesh_packet_count                         | counter   |
 | meshtastic_node_info_last_heard                      | gauge     |
+| meshtastic_neighbour_info_snr                        | gauge     |
+| meshtastic_neighbour_info_last_rx_time               | gauge     |
 | meshtastic_telemetry_device_battery_level            | gauge     |
 | meshtastic_telemetry_device_voltage                  | gauge     |
 | meshtastic_telemetry_device_channel_utilization      | gauge     |
@@ -40,8 +42,9 @@
 
 ## Usage
 
-1. configure at least one node (firmware version SHOULD be exactly equal to `v2.2.23`) in the mesh as uplink to your MQTT server of choice
-2. obtain access to a Grafana with Prometheus data source that supports Prometheus remote write 
+1. configure at least one node (firmware version SHOULD be exactly equal to `v2.2.23`) in the mesh as uplink to your
+   MQTT server of choice
+2. obtain access to a Grafana with Prometheus data source that supports Prometheus remote write
 3. use env vars to specify connection details to your MQTT server of choice (see `docker-compose.yml`)
 4. use env vars to specify Prometheus remote write URL & token (see `docker-compose.yml`)
 5. run `docker-compose up --build`
