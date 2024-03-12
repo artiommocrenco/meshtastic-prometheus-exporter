@@ -4,4 +4,4 @@ opentelemetry-exporter-prometheus-remote-write==0.44b0
 opentelemetry-exporter-prometheus==0.44b0
 opentelemetry-sdk==1.23.0
 paho-mqtt==2.0.0
-redis==5.0.2
+redis==5.0.3
