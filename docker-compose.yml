@@ -2,33 +2,29 @@ version: "3"
 
 volumes:
     prometheus_data:
+    grafana_data:
     redis_data:
 
 services:
-# I wasn't able to make self-hosted prometheus & grafana work with remote write
-# For fastest results, use cloud-hosted solutions such as Grafana Cloud or Scaleway Cockpit
-#
-#  prometheus:
-#    image: prom/prometheus:v2.49.1
-#    volumes:
-#      - prometheus_data:/prometheus
-#      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
-#    command:
-#      - "--config.file=/etc/prometheus/prometheus.yml"
-#      - "--storage.tsdb.path=/prometheus"
-#      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
-#      - "--web.console.templates=/usr/share/prometheus/consoles"
-#      - "--web.enable-remote-write-receiver"
-#      - "--enable-feature=remote-write-receiver"
-#    networks:
-#      - mesh-bridge
-#  grafana:
-#    image: grafana/grafana-oss:10.4.0
-#    ports:
-#      - "127.0.0.1:3000:3000"
-#    networks:
-#      - mesh-bridge
-  meshtastic-prometheus-exporter:
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    volumes:
+      - prometheus_data:/prometheus
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - mesh-bridge
+  grafana:
+    image: grafana/grafana-oss:10.4.0
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana-dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "0.0.0.0:3000:3000"
+    networks:
+      - mesh-bridge
+  exporter:
     build: .
     restart: unless-stopped
     environment:
@@ -41,8 +37,6 @@ services:
       - MQTT_TOPIC=msh/EU_433/#
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - PROMETHEUS_ENDPOINT=http://grafana/api/v1/push
-#      - PROMETHEUS_TOKEN=changeme
     networks:
       - mesh-bridge
   # Redis is being utilised for storing persistent state
