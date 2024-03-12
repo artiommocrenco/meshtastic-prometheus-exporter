@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_METRICS",
-      "label": "Metrics",
+      "name": "DS_PROMETHEUS",
+      "label": "prometheus",
       "description": "",
       "type": "datasource",
       "pluginId": "prometheus",
@@ -12,22 +12,10 @@
   "__elements": {},
   "__requires": [
     {
-      "type": "panel",
-      "id": "bargauge",
-      "name": "Bar gauge",
-      "version": ""
-    },
-    {
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.1.5"
-    },
-    {
-      "type": "panel",
-      "id": "heatmap",
-      "name": "Heatmap",
-      "version": ""
+      "version": "10.4.0"
     },
     {
       "type": "datasource",
@@ -68,165 +56,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "scaleDistribution": {
-              "type": "linear"
-            }
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 5,
-      "maxDataPoints": 25,
-      "options": {
-        "calculate": false,
-        "cellGap": 1,
-        "color": {
-          "exponent": 0.5,
-          "fill": "dark-orange",
-          "min": 0,
-          "mode": "scheme",
-          "reverse": false,
-          "scale": "exponential",
-          "scheme": "Reds",
-          "steps": 64
-        },
-        "exemplars": {
-          "color": "rgba(255,0,255,0.7)"
-        },
-        "filterValues": {
-          "le": 0
-        },
-        "legend": {
-          "show": true
-        },
-        "rowsFrame": {
-          "layout": "auto"
-        },
-        "tooltip": {
-          "show": true,
-          "yHistogram": false
-        },
-        "yAxis": {
-          "axisPlacement": "left",
-          "reverse": false
-        }
-      },
-      "pluginVersion": "10.1.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_METRICS}"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "sum(increase(meshtastic_mesh_packet_priority[$__interval])) by (le)",
-          "format": "heatmap",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "interval": "1m",
-          "legendFormat": "{{le}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "Packet priority distribution over time",
-      "transformations": [],
-      "type": "heatmap"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_METRICS}"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "dark-green",
-            "mode": "fixed"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 1,
-      "options": {
-        "displayMode": "gradient",
-        "minVizHeight": 10,
-        "minVizWidth": 0,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showUnfilled": true,
-        "valueMode": "color"
-      },
-      "pluginVersion": "10.1.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_METRICS}"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "sum(increase(meshtastic_mesh_packet_priority[$__range])) by (le)",
-          "format": "time_series",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{le}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "Packet priority distribution",
-      "transformations": [],
-      "type": "bargauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -235,6 +65,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -288,7 +119,7 @@
         "h": 13,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 0
       },
       "id": 3,
       "options": {
@@ -315,11 +146,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "${DS_PROMETHEUS}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum(increase(meshtastic_mesh_packet_count{via_mqtt=\"False\"}[$__interval]))",
+          "expr": "sum(increase(meshtastic_mesh_packet_count_total{via_mqtt=\"False\"}[$__interval]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -331,13 +162,12 @@
         }
       ],
       "title": "Packet rate",
-      "transformations": [],
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -345,6 +175,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -398,7 +229,7 @@
         "h": 13,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 13
       },
       "id": 4,
       "options": {
@@ -425,11 +256,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "${DS_PROMETHEUS}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(from, from_long_name, type) (increase(meshtastic_mesh_packet_count{to=\"4294967295\"}[$__interval]))",
+          "expr": "sum by(from, from_long_name, type) (increase(meshtastic_mesh_packet_count_total{to=\"4294967295\"}[$__interval]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -441,13 +272,12 @@
         }
       ],
       "title": "Packets by sending station & type (broadcast)",
-      "transformations": [],
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -455,6 +285,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -507,7 +338,7 @@
         "h": 13,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 26
       },
       "id": 6,
       "options": {
@@ -534,11 +365,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "${DS_PROMETHEUS}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(to, from, to_long_name, from_long_name, type) (increase(meshtastic_mesh_packet_count{to!=\"4294967295\"}[$__interval]))",
+          "expr": "sum by(to, from, to_long_name, from_long_name, type) (increase(meshtastic_mesh_packet_count_total{to!=\"4294967295\"}[$__interval]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -550,13 +381,12 @@
         }
       ],
       "title": "Packets by talkers & type (unicast)",
-      "transformations": [],
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -564,6 +394,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -616,7 +447,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 39
       },
       "id": 2,
       "options": {
@@ -643,11 +474,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "${DS_PROMETHEUS}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum(increase(meshtastic_mesh_packet_count[$__interval])) by (type) ",
+          "expr": "sum(increase(meshtastic_mesh_packet_count_total[$__interval])) by (type) ",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -659,13 +490,11 @@
         }
       ],
       "title": "Packets by type",
-      "transformations": [],
       "type": "timeseries"
     }
   ],
   "refresh": "30s",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": []
@@ -678,6 +507,6 @@
   "timezone": "",
   "title": "Meshtastic Packets (Net)",
   "uid": "dfe109f7-17b6-467b-97bf-2e9c6508e0fb",
-  "version": 39,
+  "version": 1,
   "weekStart": ""
 }
