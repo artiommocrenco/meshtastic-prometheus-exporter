@@ -90,8 +90,8 @@ meshtastic_mesh_packet_priority = meter.create_histogram(
     name='meshtastic_mesh_packet_priority',
 )
 
-meshtastic_mesh_packet_count = meter.create_counter(
-    name='meshtastic_mesh_packet_count',
+meshtastic_mesh_packet_count_total = meter.create_counter(
+    name='meshtastic_mesh_packet_count_total',
 )
 
 meshtastic_node_info_last_heard = meter.create_gauge(
@@ -257,7 +257,7 @@ def on_message(client, userdata, msg):
             to_long_name = get_decoded_node_metadata_from_redis(envelope.packet.to, 'long_name')
             to_short_name = get_decoded_node_metadata_from_redis(envelope.packet.to, 'short_name')
 
-            meshtastic_mesh_packet_count.add(
+            meshtastic_mesh_packet_count_total.add(
                 1, attributes={
                     'from': envelope.packet.from_,
                     'from_long_name': from_long_name,
