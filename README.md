@@ -41,7 +41,7 @@
 
 ## Usage
 
-1. configure a node (firmware version SHOULD be exactly equal to `v2.2.23`) in the mesh as uplink to your
+1. configure a node (firmware version SHOULD be exactly equal to `v2.3.0.5f47ca1`) in the mesh as uplink to your
    MQTT server of choice
 2. use env vars to specify connection details to your MQTT server of choice (see `docker-compose.yml`)
 3. run `docker-compose up -d`
@@ -50,12 +50,14 @@ Within a few minutes, data should begin populating on the dashboards. Wait sever
 with node information. After the wait, all data should be visible on the dashboards.
 
 This has been tested with:
+
 - Prometheus pull scheme as in `docker-compose.yml`
-- Scaleway Cockpit & [Grafana Mimir remote write api](https://grafana.com/docs/mimir/latest/references/http-api/#remote-write)
+- Scaleway
+  Cockpit & [Grafana Mimir remote write api](https://grafana.com/docs/mimir/latest/references/http-api/#remote-write)
 
 ## Known limitations
 
-* All nodes serving as MQTT uplinks SHOULD have firmware version exactly equal to `v2.2.23`
+* All nodes serving as MQTT uplinks SHOULD have firmware version exactly equal to `v2.3.0.5f47ca1`
 * Running two exporters for the same meshtastic network that write to the same Prometheus is not yet supported
 * Processing of MQTT data from several meshtastic nodes has not yet been tested
 * While mostly reporting useful information, Grafana dashboards do contain mistakes in some of the visualizations
