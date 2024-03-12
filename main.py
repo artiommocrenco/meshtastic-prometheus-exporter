@@ -54,7 +54,7 @@ config = {
     'mqtt_topic': os.environ.get('MQTT_TOPIC', 'msh/#'),
     'prometheus_endpoint': os.environ.get('PROMETHEUS_ENDPOINT'),
     'prometheus_token': os.environ.get('PROMETHEUS_TOKEN'),
-    'prometheus_server_addr': os.environ.get('PROMETHEUS_SERVER_ADDR', 'localhost'),
+    'prometheus_server_addr': os.environ.get('PROMETHEUS_SERVER_ADDR', '0.0.0.0'),
     'prometheus_server_port': os.environ.get('PROMETHEUS_SERVER_PORT', 9464),
     'redis_host': os.environ.get('REDIS_HOST', 'localhost'),
     'redis_port': os.environ.get('REDIS_PORT', 6379),
