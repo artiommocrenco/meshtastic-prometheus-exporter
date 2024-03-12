@@ -1,23 +1,40 @@
 #!/usr/bin/python3
 
+"""
+meshtastic-prometheus-exporter
+Copyright (C) 2024  Artiom Mocrenco and Contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import logging
 import os
 import ssl
 from sys import stdout
 from time import time
+
 import paho.mqtt.client as mqtt
 import redis
 from meshtastic import ServiceEnvelope, PortNum, Telemetry, User, NeighborInfo
 from opentelemetry import metrics
-from opentelemetry.exporter.prometheus_remote_write import (
-    PrometheusRemoteWriteMetricsExporter,
-)
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.exporter.prometheus_remote_write import PrometheusRemoteWriteMetricsExporter
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.metrics.view import (
-    ExplicitBucketHistogramAggregation,
-    View,
-)
+from opentelemetry.sdk.metrics.view import ExplicitBucketHistogramAggregation, View
+from opentelemetry.sdk.resources import Resource
+from prometheus_client import start_http_server
 
 logging.basicConfig(stream=stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,8 +52,10 @@ config = {
     'mqtt_username': os.environ.get('MQTT_USERNAME'),
     'mqtt_password': os.environ.get('MQTT_PASSWORD'),
     'mqtt_topic': os.environ.get('MQTT_TOPIC', 'msh/#'),
-    'prometheus_endpoint': os.environ.get('PROMETHEUS_ENDPOINT', 'http://grafana/api/v1/push'),
+    'prometheus_endpoint': os.environ.get('PROMETHEUS_ENDPOINT'),
     'prometheus_token': os.environ.get('PROMETHEUS_TOKEN'),
+    'prometheus_server_addr': os.environ.get('PROMETHEUS_SERVER_ADDR', 'localhost'),
+    'prometheus_server_port': os.environ.get('PROMETHEUS_SERVER_PORT', 9464),
     'redis_host': os.environ.get('REDIS_HOST', 'localhost'),
     'redis_port': os.environ.get('REDIS_PORT', 6379),
 }
@@ -49,12 +68,19 @@ if config['prometheus_token']:
         'Authorization': f'Bearer {config["prometheus_token"]}',
     }
 
-exporter = PrometheusRemoteWriteMetricsExporter(
-    endpoint=config['prometheus_endpoint'],
-    headers=headers,
-)
-reader = PeriodicExportingMetricReader(exporter, 15000)
-provider = MeterProvider(metric_readers=[reader], views=[
+if config['prometheus_endpoint'] is None:
+    reader = PrometheusMetricReader()
+    start_http_server(port=config['prometheus_server_port'], addr=config['prometheus_server_addr'])
+else:
+    exporter = PrometheusRemoteWriteMetricsExporter(
+        endpoint=config['prometheus_endpoint'],
+        headers=headers,
+    )
+    reader = PeriodicExportingMetricReader(exporter, 15000)
+
+provider = MeterProvider(resource=Resource.create(attributes={
+    "service.name": "meshtastic"
+}), metric_readers=[reader], views=[
     meshtastic_mesh_packet_priority_view,
 ])
 metrics.set_meter_provider(provider)
