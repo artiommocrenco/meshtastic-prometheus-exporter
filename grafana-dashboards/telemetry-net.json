@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_METRICS",
-      "label": "Metrics",
+      "name": "DS_PROMETHEUS",
+      "label": "prometheus",
       "description": "",
       "type": "datasource",
       "pluginId": "prometheus",
@@ -56,7 +56,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
       },
       "fieldConfig": {
         "defaults": {
@@ -138,7 +138,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -160,7 +160,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
       },
       "fieldConfig": {
         "defaults": {
@@ -240,7 +240,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -262,7 +262,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
       },
       "fieldConfig": {
         "defaults": {
@@ -343,7 +343,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -365,7 +365,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
       },
       "fieldConfig": {
         "defaults": {
@@ -451,7 +451,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -473,7 +473,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
       },
       "fieldConfig": {
         "defaults": {
@@ -559,7 +559,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -581,7 +581,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
       },
       "fieldConfig": {
         "defaults": {
@@ -660,7 +660,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -682,7 +682,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_METRICS}"
+        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
       },
       "fieldConfig": {
         "defaults": {
@@ -761,7 +761,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_METRICS}"
+            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -791,7 +791,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_METRICS}"
+          "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
         },
         "definition": "meshtastic_node_info_last_heard",
         "hide": 0,
