@@ -225,11 +225,6 @@ def on_message(client, userdata, msg):
 
         if envelope:
             print(envelope.packet)
-            priority = 64 if envelope.packet.priority == 0 else envelope.packet.priority
-            if hasattr(envelope.packet, 'priority'):
-                meshtastic_mesh_packet_priority.record(
-                    priority
-                )
 
             from_long_name = get_decoded_node_metadata_from_redis(envelope.packet.from_, 'long_name')
             from_short_name = get_decoded_node_metadata_from_redis(envelope.packet.from_, 'short_name')
@@ -249,7 +244,6 @@ def on_message(client, userdata, msg):
                                   member.value == envelope.packet.decoded.portnum), 'unknown'),
                     'hop_limit': envelope.packet.hop_limit,
                     'want_ack': envelope.packet.want_ack,
-                    'priority': priority,
                     'delayed': envelope.packet.delayed,
                     'via_mqtt': envelope.packet.via_mqtt,
                 }
