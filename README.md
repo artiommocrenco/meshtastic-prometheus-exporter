@@ -6,8 +6,7 @@
 
 | Name                                                 | Type      |
 |------------------------------------------------------|-----------|
-| meshtastic_mesh_packet_priority                      | histogram |
-| meshtastic_mesh_packet_count                         | counter   |
+| meshtastic_mesh_packet_count_total                   | counter   |
 | meshtastic_node_info_last_heard                      | gauge     |
 | meshtastic_neighbour_info_snr                        | gauge     |
 | meshtastic_neighbour_info_last_rx_time               | gauge     |
