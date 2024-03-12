@@ -1,0 +1,11 @@
+name: trunk
+
+on: push
+
+jobs:
+  test-cs:
+    name: Test code style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable
