@@ -150,7 +150,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum(increase(meshtastic_mesh_packet_count_total{via_mqtt=\"False\"}[$__interval]))",
+          "expr": "sum(increase(meshtastic_mesh_packet_count_total{via_mqtt=\"false\"}[$__interval]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
