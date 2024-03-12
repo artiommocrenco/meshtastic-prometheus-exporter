@@ -73,11 +73,17 @@ jobs:
     needs:
       - build-and-push-image
     steps:
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.67.0
+        env:
+          CUSTOM_TAG: ${{ needs.build-and-push-image.outputs.our-version-full }}
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: true
           name: Meshtastic Prometheus Exporter ${{ needs.build-and-push-image.outputs.our-version-full }} Alpha
+          tag_name: ${{ needs.build-and-push-image.outputs.our-version-full }}
           generate_release_notes: true
           token: ${{ github.token }}
