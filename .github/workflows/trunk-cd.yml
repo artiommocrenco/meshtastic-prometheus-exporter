@@ -88,7 +88,7 @@ jobs:
         with:
           draft: true
           prerelease: true
-          name: Meshtastic Prometheus Exporter ${{ needs.build-and-push-image.outputs.our-version-full }} Alpha
+          name: ${{ needs.build-and-push-image.outputs.our-version-full }} Alpha
           tag_name: ${{ needs.build-and-push-image.outputs.our-version-full }}
           generate_release_notes: true
           token: ${{ github.token }}
