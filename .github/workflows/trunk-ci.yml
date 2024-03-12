@@ -1,4 +1,4 @@
-name: trunk
+name: trunk-ci
 
 on: push
 
