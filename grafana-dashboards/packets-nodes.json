@@ -1,4 +1,35 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_METRICS",
+      "label": "Metrics",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.1.5"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,14 +49,14 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 34,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+        "uid": "${DS_METRICS}"
       },
       "description": "",
       "fieldConfig": {
@@ -114,7 +145,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+            "uid": "${DS_METRICS}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -136,7 +167,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+        "uid": "${DS_METRICS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -224,7 +255,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+            "uid": "${DS_METRICS}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -246,7 +277,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+        "uid": "${DS_METRICS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -290,8 +321,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -334,7 +364,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+            "uid": "${DS_METRICS}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -356,7 +386,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+        "uid": "${DS_METRICS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -400,8 +430,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -444,7 +473,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+            "uid": "${DS_METRICS}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -471,14 +500,10 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": true,
-          "text": "YO3ART-5",
-          "value": "2401216977"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
+          "uid": "${DS_METRICS}"
         },
         "definition": "meshtastic_node_info_last_heard",
         "hide": 0,
