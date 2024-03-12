@@ -150,7 +150,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum(increase(meshtastic_mesh_packet_count_total{to=~\"$node\", via_mqtt=\"False\"}[$__interval])) or sum(increase(meshtastic_mesh_packet_count_total{from=~\"$node\", via_mqtt=\"False\"}[$__interval]))",
+          "expr": "sum(increase(meshtastic_mesh_packet_count_total{to=~\"$node\", via_mqtt=\"false\"}[$__interval])) or sum(increase(meshtastic_mesh_packet_count_total{from=~\"$node\", via_mqtt=\"False\"}[$__interval]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
