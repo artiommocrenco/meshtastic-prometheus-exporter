@@ -62,9 +62,13 @@ jobs:
           tags: |
             ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ steps.our-version-full.outputs.version }}
             ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ steps.version-meshtastic.outputs.version }}-${{ steps.our-version-major.outputs.version }}
+            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ steps.our-version-major.outputs.version }}
+            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ steps.our-version-major.outputs.version }}.${{ steps.our-version-minor.outputs.version }}
             ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:latest
 
   release:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     needs:
       - build-and-push-image
