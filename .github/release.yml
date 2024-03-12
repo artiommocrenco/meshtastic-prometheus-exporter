@@ -4,23 +4,22 @@ changelog:
   exclude:
     labels:
       - ignore-for-release
-    authors:
-      - octocat
   categories:
-    - title: Breaking Changes 🛠
-      labels:
-        - Semver-Major
-        - breaking-change
     - title: Exciting New Features 🎉
       labels:
-        - Semver-Minor
         - enhancement
-    - title: Grafana Changes
+    - title: Grafana Changes 📊
       labels:
         - "grafana"
-    - title: Prometheus Changes
+    - title: Prometheus Changes 🔥
       labels:
         - "prometheus"
     - title: Other Changes
       labels:
         - "*"
+      exclude:
+        labels:
+          - dependencies
+    - title: 👒 Dependencies
+      labels:
+        - dependencies
