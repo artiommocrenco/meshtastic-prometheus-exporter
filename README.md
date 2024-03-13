@@ -8,8 +8,8 @@
 |------------------------------------------------------|---------|
 | meshtastic_mesh_packet_count_total                   | counter |
 | meshtastic_node_info_last_heard                      | gauge   |
-| meshtastic_neighbour_info_snr                        | gauge   |
-| meshtastic_neighbour_info_last_rx_time               | gauge   |
+| meshtastic_neighbor_info_snr                         | gauge   |
+| meshtastic_neighbor_info_last_rx_time                | gauge   |
 | meshtastic_telemetry_device_battery_level            | gauge   |
 | meshtastic_telemetry_device_voltage                  | gauge   |
 | meshtastic_telemetry_device_channel_utilization      | gauge   |
