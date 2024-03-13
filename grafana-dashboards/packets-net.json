@@ -343,18 +343,18 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(from, from_long_name, type) (increase(meshtastic_mesh_packet_count_total{to=\"4294967295\"}[$__interval]))",
+          "expr": "sum by(source, source_long_name, type) (increase(meshtastic_mesh_packet_count_total{to=\"4294967295\"}[$__interval]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "interval": "1m",
-          "legendFormat": "{{from_long_name}} ({{from}}) - {{type}}",
+          "legendFormat": "{{source_long_name}} ({{source}}) - {{type}}",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Packets by sending station & type (broadcast)",
+      "title": "Packets by source & type (broadcast)",
       "type": "timeseries"
     },
     {
