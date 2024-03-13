@@ -513,7 +513,7 @@
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
-        "regex": "/long_name=\"(?<text>[^\"]+)|source=\"(?<value>[^\"]+)/g",
+        "regex": "/source_long_name=\"(?<text>[^\"]+)|source=\"(?<value>[^\"]+)/g",
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"

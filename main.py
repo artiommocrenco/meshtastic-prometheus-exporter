@@ -356,8 +356,8 @@ def on_meshtastic_nodeinfo_app(packet, msg):
     node_info_attributes = {
         "source": source or "unknown",
         "user": node_info.id or "unknown",
-        "long_name": node_info.long_name or "unknown",
-        "short_name": node_info.short_name or "unknown",
+        "source_long_name": node_info.long_name or "unknown",
+        "source_short_name": node_info.short_name or "unknown",
         "hw_model": node_info.hw_model or "unknown",
         "is_licensed": node_info.is_licensed or "unknown",
         "role": node_info.role or "unknown",
