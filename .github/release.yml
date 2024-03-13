@@ -5,21 +5,24 @@ changelog:
     labels:
       - ignore-for-release
   categories:
-    - title: Exciting New Features 🎉
+    - title: "Exciting New Features :tada:"
       labels:
         - enhancement
-    - title: Grafana Changes 📊
+    - title: "Grafana Changes :bar_chart:"
       labels:
         - "grafana"
-    - title: Prometheus Changes 🔥
+    - title: "Prometheus Changes :fire:"
       labels:
         - "prometheus"
+    - title: "Bug Fixes :lady_beetle:"
+      labels:
+        - "bug"
     - title: Other Changes
       labels:
         - "*"
       exclude:
         labels:
           - dependencies
-    - title: 👒 Dependencies
+    - title: Dependencies
       labels:
         - dependencies
