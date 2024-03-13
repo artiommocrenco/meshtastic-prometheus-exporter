@@ -264,7 +264,7 @@ def on_meshtastic_service_envelope(envelope, msg):
     )
 
     if envelope:
-        logger.info(
+        logger.debug(
             f"Decoded ServiceEnvelope payload into MeshPacket `{envelope.packet}`"
         )
         on_meshtastic_mesh_packet(envelope.packet, msg)
@@ -274,7 +274,7 @@ def on_meshtastic_mesh_packet(packet, msg):
     unique = redis.set(str(packet.id), 1, nx=True, ex=3600 * 5)
 
     if not unique:
-        logger.info(f"Skipping processing of duplicate packet {packet.id}")
+        logger.debug(f"Skipping processing of duplicate packet {packet.id}")
         return
 
     source = packet.decoded.source or packet.from_
@@ -318,13 +318,17 @@ def on_meshtastic_mesh_packet(packet, msg):
     if packet.decoded.portnum == PortNum.NODEINFO_APP:
         on_meshtastic_nodeinfo_app(packet, msg)
     else:
-        node = packet.decoded.source or packet.from_
+        known_from = redis.get(f"{packet.from_}_long_name")
+        known_source = redis.get(f"{packet.decoded.source}_long_name")
 
-        known_node = redis.get(f"{node}_long_name")
-
-        if known_node is None:
+        if known_from is None:
             logger.info(
-                f"Node {node} has not yet identified, ignoring the packet {packet.id}"
+                f"Node {packet.from_} has not yet identified, ignoring the packet {packet.id}"
+            )
+            return
+        if known_source is None and packet.decoded.source != 0:
+            logger.info(
+                f"Node {packet.decoded.source} has not yet identified, ignoring the packet {packet.id}"
             )
             return
 
@@ -339,21 +343,21 @@ def on_meshtastic_nodeinfo_app(packet, msg):
     node_info = User().parse(packet.decoded.payload)
     logger.info(f"Decoded MeshPacket {packet.id} payload into NodeInfo `{node_info}`")
 
-    node = packet.decoded.source or packet.from_
-    if node:
+    source = packet.decoded.source or packet.from_
+    if source:
         ex = 3600 * 72
-        redis.set(f"{node}_long_name", str(node_info.long_name), ex=ex)
-        redis.set(f"{node}_short_name", str(node_info.short_name), ex=ex)
-        redis.set(f"{node}_macaddr", str(node_info.macaddr), ex=ex)
-        redis.set(f"{node}_hw_model", str(node_info.hw_model), ex=ex)
-        redis.set(f"{node}_is_licensed", str(node_info.is_licensed), ex=ex)
-        redis.set(f"{node}_role", str(node_info.role), ex=ex)
+        redis.set(f"{source}_long_name", str(node_info.long_name), ex=ex)
+        redis.set(f"{source}_short_name", str(node_info.short_name), ex=ex)
+        redis.set(f"{source}_macaddr", str(node_info.macaddr), ex=ex)
+        redis.set(f"{source}_hw_model", str(node_info.hw_model), ex=ex)
+        redis.set(f"{source}_is_licensed", str(node_info.is_licensed), ex=ex)
+        redis.set(f"{source}_role", str(node_info.role), ex=ex)
 
     node_info_attributes = {
-        "node": node or "unknown",
+        "source": source or "unknown",
         "user": node_info.id or "unknown",
-        "long_name": node_info.long_name or "unknown",
-        "short_name": node_info.short_name or "unknown",
+        "source_long_name": node_info.long_name or "unknown",
+        "source_short_name": node_info.short_name or "unknown",
         "hw_model": node_info.hw_model or "unknown",
         "is_licensed": node_info.is_licensed or "unknown",
         "role": node_info.role or "unknown",
@@ -364,17 +368,17 @@ def on_meshtastic_nodeinfo_app(packet, msg):
 def on_meshtastic_telemetry_app(packet, msg):
     telemetry = Telemetry().parse(packet.decoded.payload)
     logger.info(f"Decoded MeshPacket {packet.id} payload into Telemetry `{telemetry}`")
-    node = packet.decoded.source or packet.from_
+    source = packet.decoded.source or packet.from_
     telemetry_attributes = {
-        "node": node or "unknown",
-        "node_long_name": (
-            get_decoded_node_metadata_from_redis(node, "long_name")
-            if node
+        "source": source or "unknown",
+        "source_long_name": (
+            get_decoded_node_metadata_from_redis(source, "long_name")
+            if source
             else "unknown"
         ),
-        "node_short_name": (
-            get_decoded_node_metadata_from_redis(node, "short_name")
-            if node
+        "source_short_name": (
+            get_decoded_node_metadata_from_redis(source, "short_name")
+            if source
             else "unknown"
         ),
     }
@@ -523,32 +527,32 @@ def on_meshtastic_neighborinfo_app(packet, msg):
         f"Decoded MeshPacket {packet.id} payload into NeighborInfo `{neighbor_info}`"
     )
 
-    node = neighbor_info.node_id
+    source = neighbor_info.node_id
     neighbor_info_attributes = {
-        "node": node or "unknown",
-        "node_long_name": (
-            get_decoded_node_metadata_from_redis(node, "long_name")
-            if node
+        "source": source or "unknown",
+        "source_long_name": (
+            get_decoded_node_metadata_from_redis(source, "long_name")
+            if source
             else "unknown"
         ),
-        "node_short_name": (
-            get_decoded_node_metadata_from_redis(node, "short_name")
-            if node
+        "source_short_name": (
+            get_decoded_node_metadata_from_redis(source, "short_name")
+            if source
             else "unknown"
         ),
     }
     for n in neighbor_info.neighbors:
-        neighbor_node = n.node_id
+        neighbor_source = n.node_id
 
-        neighbor_info_attributes["neighbor_node"] = neighbor_node or "unknown"
-        neighbor_info_attributes["neighbor_node_long_name"] = (
-            get_decoded_node_metadata_from_redis(neighbor_node, "long_name")
-            if node
+        neighbor_info_attributes["neighbor_node"] = neighbor_source or "unknown"
+        neighbor_info_attributes["neighbor_source_long_name"] = (
+            get_decoded_node_metadata_from_redis(neighbor_source, "long_name")
+            if source
             else "unknown"
         )
-        neighbor_info_attributes["neighbor_node_short_name"] = (
-            get_decoded_node_metadata_from_redis(neighbor_node, "short_name")
-            if node
+        neighbor_info_attributes["neighbor_source_short_name"] = (
+            get_decoded_node_metadata_from_redis(neighbor_source, "short_name")
+            if source
             else "unknown"
         )
 

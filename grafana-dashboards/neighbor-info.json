@@ -177,18 +177,18 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg_over_time(meshtastic_neighbour_info_snr{node=\"$node\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_neighbor_info_snr{source=\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "interval": "1m",
-          "legendFormat": "{{neighbour_node_long_name}} ({{neighbour_node}})",
+          "legendFormat": "{{neighbor_source_long_name}} ({{neighbor_source}})",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "SNR per neighbour (our RX)",
+      "title": "SNR per neighbor (our RX)",
       "type": "timeseries"
     },
     {
@@ -285,18 +285,18 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg_over_time(meshtastic_neighbour_info_snr{neighbour_node=\"$node\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_neighbor_info_snr{neighbor_source=\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "interval": "1m",
-          "legendFormat": "{{node_long_name}} ({{node}})",
+          "legendFormat": "{{source_long_name}} ({{source}})",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "SNR as reported by neighbours (our TX)",
+      "title": "SNR as reported by neighbors (our TX)",
       "type": "timeseries"
     }
   ],
@@ -311,18 +311,18 @@
           "type": "prometheus",
           "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
         },
-        "definition": "meshtastic_neighbour_info_snr",
+        "definition": "meshtastic_neighbor_info_snr",
         "hide": 0,
         "includeAll": false,
         "multi": false,
-        "name": "node",
+        "name": "source",
         "options": [],
         "query": {
-          "query": "meshtastic_neighbour_info_snr",
+          "query": "meshtastic_neighbor_info_snr",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
-        "regex": "/node_long_name=\"(?<text>[^\"]+)|node=\"(?<value>[^\"]+)/g",
+        "regex": "/source_long_name=\"(?<text>[^\"]+)|source=\"(?<value>[^\"]+)/g",
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"
@@ -335,7 +335,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Meshtastic Neighbour Info",
+  "title": "Meshtastic Neighbor Info",
   "uid": "a8711380-ea8b-43d3-931a-e7233e8189f1",
   "version": 1,
   "weekStart": ""
