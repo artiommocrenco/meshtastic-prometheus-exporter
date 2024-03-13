@@ -277,6 +277,10 @@ def on_meshtastic_mesh_packet(packet, msg):
         logger.info(f"Skipping processing of duplicate packet {packet.id}")
         return
 
+    source = packet.decoded.source or packet.from_
+
+    source_long_name = get_decoded_node_metadata_from_redis(source, "long_name")
+    source_short_name = get_decoded_node_metadata_from_redis(source, "short_name")
     from_long_name = get_decoded_node_metadata_from_redis(packet.from_, "long_name")
     from_short_name = get_decoded_node_metadata_from_redis(packet.from_, "short_name")
     to_long_name = get_decoded_node_metadata_from_redis(packet.to, "long_name")
@@ -285,6 +289,9 @@ def on_meshtastic_mesh_packet(packet, msg):
     meshtastic_mesh_packet_count_total.add(
         1,
         attributes={
+            "source": source,
+            "source_long_name": source_long_name,
+            "source_short_name": source_short_name,
             "from": packet.from_,
             "from_long_name": from_long_name,
             "from_short_name": from_short_name,
