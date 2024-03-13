@@ -58,8 +58,7 @@ This has been tested with:
 ## Known limitations
 
 * All nodes serving as MQTT uplinks SHOULD have firmware version exactly equal to `v2.3.0.5f47ca1`
-* Running two exporters for the same meshtastic network that write to the same Prometheus is not yet supported
-* Processing of MQTT data from several meshtastic nodes has not yet been tested
+* Running two exporters for the same meshtastic network that write to the same Prometheus is not supported
 * While mostly reporting useful information, Grafana dashboards do contain mistakes in some of the visualizations
 * Using TLS for MQTT on meshtastic side may be problematic for performance and reliability (third-party issue)
 * Exception handling & code quality need improvement
