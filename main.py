@@ -534,7 +534,7 @@ def on_meshtastic_neighborinfo_app(packet, msg):
     for n in neighbor_info.neighbors:
         neighbor_source = n.node_id
 
-        neighbor_info_attributes["neighbor_node"] = neighbor_source or "unknown"
+        neighbor_info_attributes["neighbor_source"] = neighbor_source or "unknown"
         neighbor_info_attributes["neighbor_source_long_name"] = (
             get_decoded_node_metadata_from_redis(neighbor_source, "long_name")
             if source
