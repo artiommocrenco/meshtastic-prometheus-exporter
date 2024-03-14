@@ -472,7 +472,7 @@
               }
             ]
           },
-          "unit": "Pa"
+          "unit": "mmHg"
         },
         "overrides": []
       },
@@ -505,7 +505,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "avg_over_time(meshtastic_telemetry_env_barometric_pressure_pascal {source=\"$source\"}[$__interval]) / 1.333",
+          "expr": "avg_over_time(meshtastic_telemetry_env_barometric_pressure_pascal {source=\"$source\"}[$__interval]) / 133.3",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
