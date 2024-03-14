@@ -411,7 +411,7 @@ def on_meshtastic_telemetry_app(packet, msg):
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_env_barometric_pressure_pascal.set(
-            telemetry.environment_metrics.barometric_pressure,
+            telemetry.environment_metrics.barometric_pressure * 10**2,
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_env_gas_resistance_ohms.set(
