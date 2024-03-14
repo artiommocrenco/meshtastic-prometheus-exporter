@@ -10,7 +10,7 @@ See [SUPPORTED_METRICS.md](SUPPORTED_METRICS.md) for a list of supported metrics
 
 1. configure a node (firmware version SHOULD be exactly equal to `v2.3.0.5f47ca1`) in the mesh as uplink to your
    MQTT server of choice
-2. use env vars to specify connection details to your MQTT server of choice (see `docker-compose.yml`)
+2. download (preferably) [latest release](https://github.com/artiommocrenco/meshtastic-prometheus-exporter/releases/tag/2.3.0.5f47ca1-0.3), use env vars to specify connection details to your MQTT server of choice (see `docker-compose.yml`)
 3. run `docker-compose up -d`
 
 Within a few minutes, data should begin populating on the dashboards. Wait several hours to allow Redis to be populated
