@@ -68,12 +68,6 @@ handler.setFormatter(
 
 logger.addHandler(handler)
 
-meshtastic_mesh_packet_priority_view = View(
-    instrument_name="meshtastic_mesh_packet_priority",
-    aggregation=ExplicitBucketHistogramAggregation([1, 10, 64, 70, 120, 127]),
-)
-
-
 redis = redis.Redis(
     host=config["redis_host"], port=config["redis_port"], db=0, protocol=3
 )
@@ -99,16 +93,10 @@ else:
 provider = MeterProvider(
     resource=Resource.create(attributes={"service.name": "meshtastic"}),
     metric_readers=[reader],
-    views=[
-        meshtastic_mesh_packet_priority_view,
-    ],
+    # views=[],
 )
 metrics.set_meter_provider(provider)
 meter = metrics.get_meter(__name__)
-
-meshtastic_mesh_packet_priority = meter.create_histogram(
-    name="meshtastic_mesh_packet_priority",
-)
 
 meshtastic_mesh_packets_total = meter.create_counter(
     name="meshtastic_mesh_packets_total",
