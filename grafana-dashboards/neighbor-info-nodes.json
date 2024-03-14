@@ -116,7 +116,7 @@
               "type": "linear"
             },
             "showPoints": "always",
-            "spanNulls": 3600000,
+            "spanNulls": 3900000,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -224,7 +224,7 @@
               "type": "linear"
             },
             "showPoints": "always",
-            "spanNulls": 3600000,
+            "spanNulls": 3900000,
             "stacking": {
               "group": "A",
               "mode": "none"
