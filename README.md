@@ -4,40 +4,7 @@
 
 ## Supported metrics
 
-| Name                                                 | Type    |
-|------------------------------------------------------|---------|
-| meshtastic_mesh_packet_count_total                   | counter |
-| meshtastic_node_info_last_heard                      | gauge   |
-| meshtastic_neighbor_info_snr                         | gauge   |
-| meshtastic_neighbor_info_last_rx_time                | gauge   |
-| meshtastic_telemetry_device_battery_level            | gauge   |
-| meshtastic_telemetry_device_voltage                  | gauge   |
-| meshtastic_telemetry_device_channel_utilization      | gauge   |
-| meshtastic_telemetry_device_air_util_tx              | gauge   |
-| meshtastic_telemetry_environment_temperature         | gauge   |
-| meshtastic_telemetry_environment_relative_humidity   | gauge   |
-| meshtastic_telemetry_environment_barometric_pressure | gauge   |
-| meshtastic_telemetry_environment_gas_resistance      | gauge   |
-| meshtastic_telemetry_environment_voltage             | gauge   |
-| meshtastic_telemetry_environment_current             | gauge   |
-| meshtastic_telemetry_power_ch1_voltage               | gauge   |
-| meshtastic_telemetry_power_ch1_current               | gauge   |
-| meshtastic_telemetry_power_ch2_voltage               | gauge   |
-| meshtastic_telemetry_power_ch2_current               | gauge   |
-| meshtastic_telemetry_power_ch3_voltage               | gauge   |
-| meshtastic_telemetry_power_ch3_current               | gauge   |
-| meshtastic_telemetry_air_quality_pm10_standard       | gauge   |
-| meshtastic_telemetry_air_quality_pm25_standard       | gauge   |
-| meshtastic_telemetry_air_quality_pm100_standard      | gauge   |
-| meshtastic_telemetry_air_quality_pm10_environmental  | gauge   |
-| meshtastic_telemetry_air_quality_pm25_environmental  | gauge   |
-| meshtastic_telemetry_air_quality_pm100_environmental | gauge   |
-| meshtastic_telemetry_air_quality_particles_03um      | gauge   |
-| meshtastic_telemetry_air_quality_particles_05um      | gauge   |
-| meshtastic_telemetry_air_quality_particles_10um      | gauge   |
-| meshtastic_telemetry_air_quality_particles_25um      | gauge   |
-| meshtastic_telemetry_air_quality_particles_50um      | gauge   |
-| meshtastic_telemetry_air_quality_particles_100um     | gauge   |
+See [SUPPORTED_METRICS.md](SUPPORTED_METRICS.md) for a list of supported metrics
 
 ## Usage
 

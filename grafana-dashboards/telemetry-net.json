@@ -143,7 +143,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(meshtastic_telemetry_device_battery_level{source=~\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_telemetry_device_battery_level_percent{source=~\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -245,7 +245,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(meshtastic_telemetry_environment_temperature{source=~\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_telemetry_env_temperature_celsius{source=~\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -312,7 +312,7 @@
               }
             ]
           },
-          "unit": "mmHg"
+          "unit": "Pa"
         },
         "overrides": []
       },
@@ -348,7 +348,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(meshtastic_telemetry_environment_barometric_pressure{source=~\"$source\"}[$__interval]) / 1.333",
+          "expr": "avg_over_time(meshtastic_telemetry_env_barometric_pressure_pascal {source=~\"$source\"}[$__interval]) / 1.333",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -456,7 +456,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(meshtastic_telemetry_device_channel_utilization{source=~\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_telemetry_device_channel_utilization_percent{source=~\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -563,7 +563,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "avg_over_time(meshtastic_telemetry_device_air_util_tx{source=~\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_telemetry_device_air_util_tx_percent{source=~\"$source\"}[$__interval])",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -665,7 +665,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(meshtastic_telemetry_environment_voltage{source=~\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_telemetry_env_voltage_volts{source=~\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -730,7 +730,7 @@
               }
             ]
           },
-          "unit": "mamp"
+          "unit": "amp"
         },
         "overrides": []
       },
@@ -766,7 +766,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(meshtastic_telemetry_environment_current{source=~\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_telemetry_env_current_amperes{source=~\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -793,14 +793,14 @@
           "type": "prometheus",
           "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
         },
-        "definition": "meshtastic_node_info_last_heard",
+        "definition": "meshtastic_node_info_last_heard_timestamp_seconds",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "source",
         "options": [],
         "query": {
-          "query": "meshtastic_node_info_last_heard",
+          "query": "meshtastic_node_info_last_heard_timestamp_seconds",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
