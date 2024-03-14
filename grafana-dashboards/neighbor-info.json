@@ -140,7 +140,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "dB"
         },
         "overrides": []
       },
@@ -177,7 +177,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg_over_time(meshtastic_neighbor_info_snr{source=\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_neighbor_info_snr_decibels{source=\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -248,7 +248,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "dB"
         },
         "overrides": []
       },
@@ -285,7 +285,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg_over_time(meshtastic_neighbor_info_snr{neighbor_source=\"$source\"}[$__interval])",
+          "expr": "avg_over_time(meshtastic_neighbor_info_snr_decibels{neighbor_source=\"$source\"}[$__interval])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -311,14 +311,14 @@
           "type": "prometheus",
           "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
         },
-        "definition": "meshtastic_neighbor_info_snr",
+        "definition": "meshtastic_neighbor_info_snr_decibels",
         "hide": 0,
         "includeAll": false,
         "multi": false,
         "name": "source",
         "options": [],
         "query": {
-          "query": "meshtastic_neighbor_info_snr",
+          "query": "meshtastic_neighbor_info_snr_decibels",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

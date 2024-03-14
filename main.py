@@ -68,12 +68,6 @@ handler.setFormatter(
 
 logger.addHandler(handler)
 
-meshtastic_mesh_packet_priority_view = View(
-    instrument_name="meshtastic_mesh_packet_priority",
-    aggregation=ExplicitBucketHistogramAggregation([1, 10, 64, 70, 120, 127]),
-)
-
-
 redis = redis.Redis(
     host=config["redis_host"], port=config["redis_port"], db=0, protocol=3
 )
@@ -99,95 +93,89 @@ else:
 provider = MeterProvider(
     resource=Resource.create(attributes={"service.name": "meshtastic"}),
     metric_readers=[reader],
-    views=[
-        meshtastic_mesh_packet_priority_view,
-    ],
+    # views=[],
 )
 metrics.set_meter_provider(provider)
 meter = metrics.get_meter(__name__)
 
-meshtastic_mesh_packet_priority = meter.create_histogram(
-    name="meshtastic_mesh_packet_priority",
+meshtastic_mesh_packets_total = meter.create_counter(
+    name="meshtastic_mesh_packets_total",
 )
 
-meshtastic_mesh_packet_count_total = meter.create_counter(
-    name="meshtastic_mesh_packet_count_total",
+meshtastic_node_info_last_heard_timestamp_seconds = meter.create_gauge(
+    name="meshtastic_node_info_last_heard_timestamp_seconds",
 )
 
-meshtastic_node_info_last_heard = meter.create_gauge(
-    name="meshtastic_node_info_last_heard",
-)
-
-meshtastic_neighbor_info_snr = meter.create_gauge(
-    name="meshtastic_neighbor_info_snr",
+meshtastic_neighbor_info_snr_decibels = meter.create_gauge(
+    name="meshtastic_neighbor_info_snr_decibels",
 )
 
 meshtastic_neighbor_info_last_rx_time = meter.create_gauge(
     name="meshtastic_neighbor_info_last_rx_time",
 )
 
-meshtastic_telemetry_device_battery_level = meter.create_gauge(
-    name="meshtastic_telemetry_device_battery_level",
+meshtastic_telemetry_device_battery_level_percent = meter.create_gauge(
+    name="meshtastic_telemetry_device_battery_level_percent",
 )
 
-meshtastic_telemetry_device_voltage = meter.create_gauge(
-    name="meshtastic_telemetry_device_voltage",
+meshtastic_telemetry_device_voltage_volts = meter.create_gauge(
+    name="meshtastic_telemetry_device_voltage_volts",
 )
 
-meshtastic_telemetry_device_channel_utilization = meter.create_gauge(
-    name="meshtastic_telemetry_device_channel_utilization",
+meshtastic_telemetry_device_channel_utilization_percent = meter.create_gauge(
+    name="meshtastic_telemetry_device_channel_utilization_percent",
 )
 
-meshtastic_telemetry_device_air_util_tx = meter.create_gauge(
-    name="meshtastic_telemetry_device_air_util_tx",
+meshtastic_telemetry_device_air_util_tx_percent = meter.create_gauge(
+    name="meshtastic_telemetry_device_air_util_tx_percent",
 )
 
-meshtastic_telemetry_environment_temperature = meter.create_gauge(
-    name="meshtastic_telemetry_environment_temperature",
+meshtastic_telemetry_env_temperature_celsius = meter.create_gauge(
+    name="meshtastic_telemetry_env_temperature_celsius",
 )
 
-meshtastic_telemetry_environment_relative_humidity = meter.create_gauge(
-    name="meshtastic_telemetry_environment_relative_humidity",
+meshtastic_telemetry_env_relative_humidity_percent = meter.create_gauge(
+    name="meshtastic_telemetry_env_relative_humidity_percent",
 )
 
-meshtastic_telemetry_environment_barometric_pressure = meter.create_gauge(
-    name="meshtastic_telemetry_environment_barometric_pressure",
+meshtastic_telemetry_env_barometric_pressure_pascal = meter.create_gauge(
+    name="meshtastic_telemetry_env_barometric_pressure_pascal",
 )
 
-meshtastic_telemetry_environment_gas_resistance = meter.create_gauge(
-    name="meshtastic_telemetry_environment_gas_resistance",
+meshtastic_telemetry_env_gas_resistance_ohms = meter.create_gauge(
+    name="meshtastic_telemetry_env_gas_resistance_ohms",
 )
 
-meshtastic_telemetry_environment_voltage = meter.create_gauge(
-    name="meshtastic_telemetry_environment_voltage",
+meshtastic_telemetry_env_voltage_volts = meter.create_gauge(
+    name="meshtastic_telemetry_env_voltage_volts",
 )
 
-meshtastic_telemetry_environment_current = meter.create_gauge(
-    name="meshtastic_telemetry_environment_current",
+meshtastic_telemetry_env_current_amperes = meter.create_gauge(
+    name="meshtastic_telemetry_env_current_amperes",
 )
 
-meshtastic_telemetry_power_ch1_voltage = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch1_voltage",
+meshtastic_telemetry_power_ch1_voltage_volts = meter.create_gauge(
+    name="meshtastic_telemetry_power_ch1_voltage_volts",
 )
 
-meshtastic_telemetry_power_ch1_current = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch1_current",
+meshtastic_telemetry_power_ch1_current_amperes = meter.create_gauge(
+    name="meshtastic_telemetry_power_ch1_current_amperes",
 )
 
-meshtastic_telemetry_power_ch2_voltage = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch2_voltage",
+meshtastic_telemetry_power_ch2_voltage_volts = meter.create_gauge(
+    name="meshtastic_telemetry_power_ch2_voltage_volts",
 )
 
-meshtastic_telemetry_power_ch2_current = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch2_current",
+meshtastic_telemetry_power_ch2_current_amperes = meter.create_gauge(
+    name="meshtastic_telemetry_power_ch2_current_amperes",
 )
 
-meshtastic_telemetry_power_ch3_voltage = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch3_voltage",
+meshtastic_telemetry_power_ch3_voltage_volts = meter.create_gauge(
+    name="meshtastic_telemetry_power_ch3_voltage_volts",
 )
 
-meshtastic_telemetry_power_ch3_current = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch3_current",
+meshtastic_telemetry_power_ch3_current_amperes = meter.create_gauge(
+    name="meshtastic_telemetry_power_ch3_current_amperes",
 )
 
 meshtastic_telemetry_air_quality_pm10_standard = meter.create_gauge(
@@ -286,7 +274,7 @@ def on_meshtastic_mesh_packet(packet, msg):
     to_long_name = get_decoded_node_metadata_from_redis(packet.to, "long_name")
     to_short_name = get_decoded_node_metadata_from_redis(packet.to, "short_name")
 
-    meshtastic_mesh_packet_count_total.add(
+    meshtastic_mesh_packets_total.add(
         1,
         attributes={
             "source": source,
@@ -362,7 +350,9 @@ def on_meshtastic_nodeinfo_app(packet, msg):
         "is_licensed": node_info.is_licensed or "unknown",
         "role": node_info.role or "unknown",
     }
-    meshtastic_node_info_last_heard.set(time(), attributes=node_info_attributes)
+    meshtastic_node_info_last_heard_timestamp_seconds.set(
+        time(), attributes=node_info_attributes
+    )
 
 
 def on_meshtastic_telemetry_app(packet, msg):
@@ -389,19 +379,19 @@ def on_meshtastic_telemetry_app(packet, msg):
         logger.info(
             f"MeshPacket {packet.id} appears to be telemetry of type device metrics"
         )
-        meshtastic_telemetry_device_battery_level.set(
+        meshtastic_telemetry_device_battery_level_percent.set(
             telemetry.device_metrics.battery_level,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_device_voltage.set(
+        meshtastic_telemetry_device_voltage_volts.set(
             telemetry.device_metrics.voltage,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_device_channel_utilization.set(
+        meshtastic_telemetry_device_channel_utilization_percent.set(
             telemetry.device_metrics.channel_utilization,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_device_air_util_tx.set(
+        meshtastic_telemetry_device_air_util_tx_percent.set(
             telemetry.device_metrics.air_util_tx,
             attributes=telemetry_attributes,
         )
@@ -412,28 +402,28 @@ def on_meshtastic_telemetry_app(packet, msg):
         logger.info(
             f"MeshPacket {packet.id} appears to be telemetry of type environment metrics"
         )
-        meshtastic_telemetry_environment_temperature.set(
+        meshtastic_telemetry_env_temperature_celsius.set(
             telemetry.environment_metrics.temperature,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_environment_relative_humidity.set(
+        meshtastic_telemetry_env_relative_humidity_percent.set(
             telemetry.environment_metrics.relative_humidity,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_environment_barometric_pressure.set(
-            telemetry.environment_metrics.barometric_pressure,
+        meshtastic_telemetry_env_barometric_pressure_pascal.set(
+            telemetry.environment_metrics.barometric_pressure * 10**2,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_environment_gas_resistance.set(
-            telemetry.environment_metrics.gas_resistance,
+        meshtastic_telemetry_env_gas_resistance_ohms.set(
+            telemetry.environment_metrics.gas_resistance / 10**6,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_environment_voltage.set(
+        meshtastic_telemetry_env_voltage_volts.set(
             telemetry.environment_metrics.voltage,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_environment_current.set(
-            telemetry.environment_metrics.current,
+        meshtastic_telemetry_env_current_amperes.set(
+            telemetry.environment_metrics.current * 10**-3,
             attributes=telemetry_attributes,
         )
     if (
@@ -495,28 +485,28 @@ def on_meshtastic_telemetry_app(packet, msg):
         logger.info(
             f"MeshPacket {packet.id} appears to be telemetry of type power metrics"
         )
-        meshtastic_telemetry_power_ch1_voltage.set(
+        meshtastic_telemetry_power_ch1_voltage_volts.set(
             telemetry.power_metrics.ch1_voltage,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_power_ch1_current.set(
-            telemetry.power_metrics.ch1_current,
+        meshtastic_telemetry_power_ch1_current_amperes.set(
+            telemetry.power_metrics.ch1_current * 10**-3,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_power_ch2_voltage.set(
+        meshtastic_telemetry_power_ch2_voltage_volts.set(
             telemetry.power_metrics.ch2_voltage,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_power_ch2_current.set(
-            telemetry.power_metrics.ch2_current,
+        meshtastic_telemetry_power_ch2_current_amperes.set(
+            telemetry.power_metrics.ch2_current * 10**-3,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_power_ch3_voltage.set(
+        meshtastic_telemetry_power_ch3_voltage_volts.set(
             telemetry.power_metrics.ch3_voltage,
             attributes=telemetry_attributes,
         )
-        meshtastic_telemetry_power_ch3_current.set(
-            telemetry.power_metrics.ch3_current,
+        meshtastic_telemetry_power_ch3_current_amperes.set(
+            telemetry.power_metrics.ch3_current * 10**-3,
             attributes=telemetry_attributes,
         )
 
@@ -556,7 +546,9 @@ def on_meshtastic_neighborinfo_app(packet, msg):
             else "unknown"
         )
 
-        meshtastic_neighbor_info_snr.set(n.snr, attributes=neighbor_info_attributes)
+        meshtastic_neighbor_info_snr_decibels.set(
+            n.snr, attributes=neighbor_info_attributes
+        )
         meshtastic_neighbor_info_last_rx_time.set(
             n.last_rx_time, attributes=neighbor_info_attributes
         )
