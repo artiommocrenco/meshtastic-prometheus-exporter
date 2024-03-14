@@ -22,15 +22,22 @@
 | meshtastic_telemetry_power_ch2_current_amperes          | gauge   |
 | meshtastic_telemetry_power_ch3_voltage_volts            | gauge   |
 | meshtastic_telemetry_power_ch3_current_amperes          | gauge   |
-| meshtastic_telemetry_air_quality_pm10_standard          | gauge   |
-| meshtastic_telemetry_air_quality_pm25_standard          | gauge   |
-| meshtastic_telemetry_air_quality_pm100_standard         | gauge   |
-| meshtastic_telemetry_air_quality_pm10_environmental     | gauge   |
-| meshtastic_telemetry_air_quality_pm25_environmental     | gauge   |
-| meshtastic_telemetry_air_quality_pm100_environmental    | gauge   |
-| meshtastic_telemetry_air_quality_particles_03um         | gauge   |
-| meshtastic_telemetry_air_quality_particles_05um         | gauge   |
-| meshtastic_telemetry_air_quality_particles_10um         | gauge   |
-| meshtastic_telemetry_air_quality_particles_25um         | gauge   |
-| meshtastic_telemetry_air_quality_particles_50um         | gauge   |
-| meshtastic_telemetry_air_quality_particles_100um        | gauge   |
+
+## Air quality metrics
+
+:interrobang: Who knows which units these are, please submit a PR/issue
+
+| Name                                                 | Type  |
+|------------------------------------------------------|-------|
+| meshtastic_telemetry_air_quality_pm10_standard       | gauge |
+| meshtastic_telemetry_air_quality_pm25_standard       | gauge |
+| meshtastic_telemetry_air_quality_pm100_standard      | gauge |
+| meshtastic_telemetry_air_quality_pm10_environmental  | gauge |
+| meshtastic_telemetry_air_quality_pm25_environmental  | gauge |
+| meshtastic_telemetry_air_quality_pm100_environmental | gauge |
+| meshtastic_telemetry_air_quality_particles_03um      | gauge |
+| meshtastic_telemetry_air_quality_particles_05um      | gauge |
+| meshtastic_telemetry_air_quality_particles_10um      | gauge |
+| meshtastic_telemetry_air_quality_particles_25um      | gauge |
+| meshtastic_telemetry_air_quality_particles_50um      | gauge |
+| meshtastic_telemetry_air_quality_particles_100um     | gauge |
