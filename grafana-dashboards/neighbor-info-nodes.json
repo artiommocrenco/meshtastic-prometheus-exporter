@@ -103,7 +103,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
-            "gradientMode": "none",
+            "gradientMode": "scheme",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -219,7 +219,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
-            "gradientMode": "none",
+            "gradientMode": "scheme",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
