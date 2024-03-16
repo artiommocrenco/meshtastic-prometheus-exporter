@@ -61,7 +61,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "continuous-RdYlGr"
+            "mode": "thresholds",
+            "seriesBy": "last"
           },
           "custom": {
             "axisBorderShow": true,
@@ -98,16 +99,22 @@
           },
           "decimals": 2,
           "mappings": [],
+          "max": 11,
+          "min": -20,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "dark-red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "dark-yellow",
+                "value": -10
+              },
+              {
+                "color": "dark-green",
+                "value": 0
               }
             ]
           },

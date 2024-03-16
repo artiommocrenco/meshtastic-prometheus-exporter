@@ -91,7 +91,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "continuous-RdYlGr"
+            "mode": "thresholds",
+            "seriesBy": "last"
           },
           "custom": {
             "axisBorderShow": true,
@@ -128,16 +129,22 @@
           },
           "decimals": 2,
           "mappings": [],
+          "max": 11,
+          "min": -20,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "dark-red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "dark-yellow",
+                "value": -10
+              },
+              {
+                "color": "dark-green",
+                "value": 0
               }
             ]
           },
@@ -200,7 +207,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "continuous-RdYlGr"
+            "mode": "thresholds",
+            "seriesBy": "last"
           },
           "custom": {
             "axisBorderShow": true,
@@ -237,16 +245,22 @@
           },
           "decimals": 2,
           "mappings": [],
+          "max": 11,
+          "min": -20,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "dark-red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "dark-yellow",
+                "value": -10
+              },
+              {
+                "color": "dark-green",
+                "value": 0
               }
             ]
           },
@@ -339,6 +353,6 @@
   "timezone": "",
   "title": "Meshtastic Neighbor Info (Nodes)",
   "uid": "a8711380-ea8b-43d3-931a-e7233e8189f1",
-  "version": 1,
+  "version": 4,
   "weekStart": ""
 }
