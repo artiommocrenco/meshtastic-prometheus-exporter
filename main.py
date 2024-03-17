@@ -53,6 +53,7 @@ config = {
     "redis_host": os.environ.get("REDIS_HOST", "localhost"),
     "redis_port": os.environ.get("REDIS_PORT", 6379),
     "log_level": os.environ.get("LOG_LEVEL", "INFO"),
+    "flood_expire_time": os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60),
 }
 
 logger = logging.getLogger(__name__)
@@ -263,7 +264,7 @@ def on_meshtastic_mesh_packet(packet, msg):
         logger.debug(f"Skipping processing of encrypted packet {packet.id}")
         return
 
-    unique = redis.set(str(packet.id), 1, nx=True, ex=3600 * 5)
+    unique = redis.set(str(packet.id), 1, nx=True, ex=config["flood_expire_time"])
 
     if not unique:
         logger.debug(f"Skipping processing of duplicate packet {packet.id}")
