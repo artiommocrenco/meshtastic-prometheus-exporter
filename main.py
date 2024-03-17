@@ -259,6 +259,10 @@ def on_meshtastic_service_envelope(envelope, msg):
 
 
 def on_meshtastic_mesh_packet(packet, msg):
+    if packet.encrypted:
+        logger.debug(f"Skipping processing of encrypted packet {packet.id}")
+        return
+
     unique = redis.set(str(packet.id), 1, nx=True, ex=3600 * 5)
 
     if not unique:
