@@ -7,14 +7,18 @@ volumes:
 
 services:
   prometheus:
-    image: prom/prometheus:v2.50.1
+    image: prom/prometheus:v2.51.1
+    restart: unless-stopped
+    extra_hosts:
+          - "host.docker.internal:host-gateway"
     volumes:
       - prometheus_data:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - mesh-bridge
   grafana:
-    image: grafana/grafana-oss:10.4.0
+    image: grafana/grafana-oss:10.4.1
+    restart: unless-stopped
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
