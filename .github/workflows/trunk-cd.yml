@@ -79,7 +79,7 @@ jobs:
           fetch-depth: '0'
 
       - name: Bump version and push tag
-        uses: anothrNick/github-tag-action@1.67.0
+        uses: anothrNick/github-tag-action@1.69.0
         env:
           CUSTOM_TAG: ${{ needs.build-and-push-image.outputs.our-version-full }}
           GITHUB_TOKEN: ${{ github.token }}
