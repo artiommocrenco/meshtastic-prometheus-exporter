@@ -21,7 +21,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.1.5"
+      "version": "10.4.2"
     },
     {
       "type": "datasource",
@@ -116,7 +116,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
@@ -291,7 +291,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
