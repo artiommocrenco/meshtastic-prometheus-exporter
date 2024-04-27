@@ -21,7 +21,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.4.0"
+      "version": "10.4.2"
     },
     {
       "type": "datasource",
@@ -224,7 +224,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "10.4.0",
+      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
@@ -233,7 +233,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(hop_limit) (increase(meshtastic_mesh_packets_total[$__range]))",
+          "expr": "sum by(hop_limit) (increase(meshtastic_mesh_packets_total[$__range])) > 0",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,

@@ -15,7 +15,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.4.0"
+      "version": "10.4.2"
     },
     {
       "type": "datasource",
@@ -80,7 +80,7 @@
         "content": "# Only nodes that have enabled the [Neighbor Info Module](https://meshtastic.org/docs/configuration/module/neighbor-info/) are shown.",
         "mode": "markdown"
       },
-      "pluginVersion": "10.4.0",
+      "pluginVersion": "10.4.2",
       "type": "text"
     },
     {
