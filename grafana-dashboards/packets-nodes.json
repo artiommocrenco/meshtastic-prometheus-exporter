@@ -502,20 +502,21 @@
           "type": "prometheus",
           "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
         },
-        "definition": "meshtastic_node_info_last_heard_timestamp_seconds",
+        "definition": "meshtastic_mesh_packets_total",
         "hide": 0,
         "includeAll": false,
-        "multi": false,
+        "multi": true,
         "name": "source",
         "options": [],
         "query": {
-          "query": "meshtastic_node_info_last_heard_timestamp_seconds",
+          "qryType": 4,
+          "query": "meshtastic_mesh_packets_total",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
         "regex": "/source_long_name=\"(?<text>[^\"]+)|source=\"(?<value>[^\"]+)/g",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 5,
         "type": "query"
       }
     ]
@@ -528,6 +529,6 @@
   "timezone": "",
   "title": "Meshtastic Packets (Nodes)",
   "uid": "dfe109f7-17b6-467b-97bf-2e9c6508e0fc",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
