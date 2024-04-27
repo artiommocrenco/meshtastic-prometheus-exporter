@@ -327,20 +327,21 @@
           "type": "prometheus",
           "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
         },
-        "definition": "meshtastic_neighbor_info_snr_decibels",
+        "definition": "meshtastic_mesh_packets_total",
         "hide": 0,
         "includeAll": false,
-        "multi": false,
+        "multi": true,
         "name": "source",
         "options": [],
         "query": {
-          "query": "meshtastic_neighbor_info_snr_decibels",
+          "qryType": 4,
+          "query": "meshtastic_mesh_packets_total",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
         "regex": "/source_long_name=\"(?<text>[^\"]+)|source=\"(?<value>[^\"]+)/g",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 5,
         "type": "query"
       }
     ]
@@ -353,6 +354,6 @@
   "timezone": "",
   "title": "Meshtastic Neighbor Info (Nodes)",
   "uid": "a8711380-ea8b-43d3-931a-e7233e8189f1",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }
