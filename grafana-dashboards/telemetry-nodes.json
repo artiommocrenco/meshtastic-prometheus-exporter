@@ -940,19 +940,19 @@
           "type": "prometheus",
           "uid": "a7ee7fd2-ee1a-4400-b169-afa1f8c619ed"
         },
-        "definition": "meshtastic_mesh_packets_total",
+        "definition": "label_values(meshtastic_mesh_packets_total,source_long_name)",
         "hide": 0,
         "includeAll": false,
         "multi": true,
         "name": "source",
         "options": [],
         "query": {
-          "qryType": 4,
-          "query": "meshtastic_mesh_packets_total",
+          "qryType": 1,
+          "query": "label_values(meshtastic_mesh_packets_total,source_long_name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
-        "regex": "/source_long_name=\"(?<text>[^\"]+)|source=\"(?<value>[^\"]+)/g",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 5,
         "type": "query"
