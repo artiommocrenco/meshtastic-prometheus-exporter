@@ -190,7 +190,7 @@
           "includeNullMetadata": true,
           "instant": false,
           "interval": "1m",
-          "legendFormat": "{{neighbor_source_long_name}} ({{neighbor_source}})",
+          "legendFormat": "{{source_long_name}} ({{source}}) <- {{neighbor_source_long_name}} ({{neighbor_source}})",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -306,7 +306,7 @@
           "includeNullMetadata": true,
           "instant": false,
           "interval": "1m",
-          "legendFormat": "{{source_long_name}} ({{source}})",
+          "legendFormat": "{{source_long_name}} ({{source}}) <- {{neighbor_source_long_name}} ({{neighbor_source}})",
           "range": true,
           "refId": "A",
           "useBackend": false
