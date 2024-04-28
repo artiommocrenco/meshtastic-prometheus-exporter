@@ -129,7 +129,7 @@
           },
           "decimals": 2,
           "mappings": [],
-          "max": 11,
+          "max": 20,
           "min": -20,
           "thresholds": {
             "mode": "absolute",
@@ -245,7 +245,7 @@
           },
           "decimals": 2,
           "mappings": [],
-          "max": 11,
+          "max": 20,
           "min": -20,
           "thresholds": {
             "mode": "absolute",
