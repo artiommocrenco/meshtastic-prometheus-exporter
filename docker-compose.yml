@@ -39,8 +39,7 @@ services:
 #      - MQTT_USERNAME=changeme
 #      - MQTT_PASSWORD=changeme
       - MQTT_TOPIC=msh/EU_433/#
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
     networks:
       - mesh-bridge
   # Redis is being utilised for storing persistent state
