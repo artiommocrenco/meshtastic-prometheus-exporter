@@ -50,8 +50,7 @@ config = {
     "prometheus_token": os.environ.get("PROMETHEUS_TOKEN"),
     "prometheus_server_addr": os.environ.get("PROMETHEUS_SERVER_ADDR", "0.0.0.0"),
     "prometheus_server_port": os.environ.get("PROMETHEUS_SERVER_PORT", 9464),
-    "redis_host": os.environ.get("REDIS_HOST", "localhost"),
-    "redis_port": os.environ.get("REDIS_PORT", 6379),
+    "redis_url": os.environ.get("REDIS_URL", "redis://localhost:6379"),
     "log_level": os.environ.get("LOG_LEVEL", "INFO"),
     "flood_expire_time": os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60),
 }
@@ -69,9 +68,7 @@ handler.setFormatter(
 
 logger.addHandler(handler)
 
-redis = redis.Redis(
-    host=config["redis_host"], port=config["redis_port"], db=0, protocol=3
-)
+redis = redis.from_url(config["redis_url"], db=0, protocol=3)
 
 headers = {}
 if config["prometheus_token"]:
