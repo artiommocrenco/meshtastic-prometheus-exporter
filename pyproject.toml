@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "meshtastic-prometheus-exporter"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Artiom Mocrenco", email = "artiom.mocrenco@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "opentelemetry-api==1.28.1",
+  "opentelemetry-exporter-prometheus==0.49b1",
+  "opentelemetry-sdk==1.28.1",
+  "paho-mqtt==2.1.0",
+  "redis==5.2.0",
+  "meshtastic~=2.5.4",
+  "Pypubsub~=4.0.3",
+]
+
+[project.urls]
+Documentation = "https://github.com/Artiom Mocrenco/meshtastic-prometheus-exporter#readme"
+Issues = "https://github.com/Artiom Mocrenco/meshtastic-prometheus-exporter/issues"
+Source = "https://github.com/Artiom Mocrenco/meshtastic-prometheus-exporter"
+
+[tool.hatch.version]
+path = "src/meshtastic_prometheus_exporter/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/meshtastic_prometheus_exporter tests}"
+
+[tool.coverage.run]
+source_pkgs = ["meshtastic_prometheus_exporter", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/meshtastic_prometheus_exporter/__about__.py",
+]
+
+[tool.coverage.paths]
+meshtastic_prometheus_exporter = ["src/meshtastic_prometheus_exporter", "*/meshtastic-prometheus-exporter/src/meshtastic_prometheus_exporter"]
+tests = ["tests", "*/meshtastic-prometheus-exporter/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "src"
+]
