@@ -23,20 +23,16 @@ import os
 import ssl
 from sys import stdout
 from time import time
-
+import meshtastic.serial_interface
 import paho.mqtt.client as mqtt
 import redis
-from meshtastic import ServiceEnvelope, PortNum, Telemetry, User, NeighborInfo
 from opentelemetry import metrics
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
-from opentelemetry.exporter.prometheus_remote_write import (
-    PrometheusRemoteWriteMetricsExporter,
-)
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.metrics.view import ExplicitBucketHistogramAggregation, View
+
 from opentelemetry.sdk.resources import Resource
 from prometheus_client import start_http_server
+from pubsub import pub
 
 config = {
     "mqtt_address": os.environ.get("MQTT_ADDRESS", "mqtt.meshtastic.org"),
@@ -81,12 +77,6 @@ if config["prometheus_endpoint"] is None:
     start_http_server(
         port=config["prometheus_server_port"], addr=config["prometheus_server_addr"]
     )
-else:
-    exporter = PrometheusRemoteWriteMetricsExporter(
-        endpoint=config["prometheus_endpoint"],
-        headers=headers,
-    )
-    reader = PeriodicExportingMetricReader(exporter, 15000)
 
 provider = MeterProvider(
     resource=Resource.create(attributes={"service.name": "meshtastic"}),
@@ -246,121 +236,115 @@ def get_decoded_node_metadata_from_redis(node: float, metadata: str):
 
 def on_meshtastic_service_envelope(envelope, msg):
     logger.debug(
-        f"Received ServiceEnvelope payload `{msg.payload}` from `{msg.topic}` topic"
+        f"Received ServiceEnvelope payload `{msg['payload']}` from `{msg.topic}` topic"
     )
 
     if envelope:
         logger.debug(
             f"Decoded ServiceEnvelope payload into MeshPacket `{envelope.packet}`"
         )
-        on_meshtastic_mesh_packet(envelope.packet, msg)
+        on_meshtastic_mesh_packet(envelope.packet)
 
 
-def on_meshtastic_mesh_packet(packet, msg):
-    if packet.encrypted:
-        logger.debug(f"Skipping processing of encrypted packet {packet.id}")
+def on_meshtastic_mesh_packet(packet):
+    if hasattr(packet, "encrypted"):
+        logger.debug(f"Skipping processing of encrypted packet {packet['id']}")
         return
 
-    unique = redis.set(str(packet.id), 1, nx=True, ex=config["flood_expire_time"])
+    unique = redis.set(str(packet["id"]), 1, nx=True, ex=config["flood_expire_time"])
 
     if not unique:
-        logger.debug(f"Skipping processing of duplicate packet {packet.id}")
+        logger.debug(f"Skipping processing of duplicate packet {packet['id']}")
         return
 
-    source = packet.decoded.source or packet.from_
+    source = packet["decoded"].get("source", packet["from"])
 
     source_long_name = get_decoded_node_metadata_from_redis(source, "long_name")
     source_short_name = get_decoded_node_metadata_from_redis(source, "short_name")
-    from_long_name = get_decoded_node_metadata_from_redis(packet.from_, "long_name")
-    from_short_name = get_decoded_node_metadata_from_redis(packet.from_, "short_name")
-    to_long_name = get_decoded_node_metadata_from_redis(packet.to, "long_name")
-    to_short_name = get_decoded_node_metadata_from_redis(packet.to, "short_name")
+    from_long_name = get_decoded_node_metadata_from_redis(packet["from"], "long_name")
+    from_short_name = get_decoded_node_metadata_from_redis(packet["from"], "short_name")
+    to_long_name = get_decoded_node_metadata_from_redis(packet["to"], "long_name")
+    to_short_name = get_decoded_node_metadata_from_redis(packet["to"], "short_name")
 
+    # https://buf.build/meshtastic/protobufs/file/main:meshtastic/portnums.proto
     meshtastic_mesh_packets_total.add(
         1,
         attributes={
             "source": source,
             "source_long_name": source_long_name,
             "source_short_name": source_short_name,
-            "from": packet.from_,
+            "from": packet["from"],
             "from_long_name": from_long_name,
             "from_short_name": from_short_name,
-            "to": packet.to,
+            "to": packet["to"],
             "to_long_name": to_long_name,
             "to_short_name": to_short_name,
-            "channel": packet.channel,
-            "type": next(
-                (
-                    name
-                    for name, member in PortNum.__members__.items()
-                    if member.value == packet.decoded.portnum
-                ),
-                "unknown",
-            ),
-            "hop_limit": packet.hop_limit,
-            "want_ack": packet.want_ack,
-            "delayed": packet.delayed,
-            "via_mqtt": packet.via_mqtt,
+            "channel": packet.get("channel", 0),
+            "type": packet["decoded"]["portnum"],
+            "hop_limit": packet.get("hopLimit", "unknown"),
+            "want_ack": packet.get("wantAck", "unknown"),
+            "delayed": packet.get("delayed", "unknown"),
+            "via_mqtt": packet.get("viaMqtt", "unknown"),
         },
     )
-
-    # https://buf.build/meshtastic/protobufs/file/main:meshtastic/portnums.proto
-    if packet.decoded.portnum == PortNum.NODEINFO_APP:
-        on_meshtastic_nodeinfo_app(packet, msg)
+    if packet["decoded"]["portnum"] == "NODEINFO_APP":
+        on_meshtastic_nodeinfo_app(packet)
     else:
-        known_from = redis.get(f"{packet.from_}_long_name")
-        known_source = redis.get(f"{packet.decoded.source}_long_name")
+        known_from = redis.get(f"{packet['from']}_long_name")
+        known_source = redis.get(f"{source}_long_name")
 
         if known_from is None:
             logger.info(
-                f"Node {packet.from_} has not yet identified, ignoring the packet {packet.id}"
+                f"Node {packet['from']} has not yet identified, ignoring the packet {packet['id']}"
             )
             return
-        if known_source is None and packet.decoded.source != 0:
+        if known_source is None and packet["decoded"].source != 0:
             logger.info(
-                f"Node {packet.decoded.source} has not yet identified, ignoring the packet {packet.id}"
+                f"Node {source} has not yet identified, ignoring the packet {packet['id']}"
             )
             return
 
-    if packet.decoded.portnum == PortNum.TELEMETRY_APP:
-        on_meshtastic_telemetry_app(packet, msg)
+    if packet["decoded"]["portnum"] == "TELEMETRY_APP":
+        on_meshtastic_telemetry_app(packet)
 
-    if packet.decoded.portnum == PortNum.NEIGHBORINFO_APP:
-        on_meshtastic_neighborinfo_app(packet, msg)
+    if packet["decoded"]["portnum"] == "NEIGHBORINFO_APP":
+        on_meshtastic_neighborinfo_app(packet)
 
 
-def on_meshtastic_nodeinfo_app(packet, msg):
-    node_info = User().parse(packet.decoded.payload)
-    logger.info(f"Decoded MeshPacket {packet.id} payload into NodeInfo `{node_info}`")
+def on_meshtastic_nodeinfo_app(packet):
+    node_info = packet["decoded"]["user"]
 
-    source = packet.decoded.source or packet.from_
+    logger.info(
+        f"Decoded MeshPacket {packet['id']} payload into NodeInfo `{node_info}`"
+    )
+
+    source = packet["decoded"].get("source", packet["from"])
+    is_licensed = node_info.get("isLicensed", 0)
     if source:
         ex = 3600 * 72
-        redis.set(f"{source}_long_name", str(node_info.long_name), ex=ex)
-        redis.set(f"{source}_short_name", str(node_info.short_name), ex=ex)
-        redis.set(f"{source}_macaddr", str(node_info.macaddr), ex=ex)
-        redis.set(f"{source}_hw_model", str(node_info.hw_model), ex=ex)
-        redis.set(f"{source}_is_licensed", str(node_info.is_licensed), ex=ex)
-        redis.set(f"{source}_role", str(node_info.role), ex=ex)
+        redis.set(f"{source}_long_name", node_info["longName"], ex=ex)
+        redis.set(f"{source}_short_name", node_info["shortName"], ex=ex)
+        redis.set(f"{source}_hw_model", node_info["hwModel"], ex=ex)
+        redis.set(f"{source}_is_licensed", str(is_licensed), ex=ex)
 
     node_info_attributes = {
-        "source": source or "unknown",
-        "user": node_info.id or "unknown",
-        "source_long_name": node_info.long_name or "unknown",
-        "source_short_name": node_info.short_name or "unknown",
-        "hw_model": node_info.hw_model or "unknown",
-        "is_licensed": node_info.is_licensed or "unknown",
-        "role": node_info.role or "unknown",
+        "source": source,
+        "user": node_info["id"],
+        "source_long_name": node_info["longName"],
+        "source_short_name": node_info["shortName"],
+        "is_licensed": str(is_licensed),
     }
     meshtastic_node_info_last_heard_timestamp_seconds.set(
-        time(), attributes=node_info_attributes
+        time.time(), attributes=node_info_attributes
     )
 
 
-def on_meshtastic_telemetry_app(packet, msg):
-    telemetry = Telemetry().parse(packet.decoded.payload)
-    logger.info(f"Decoded MeshPacket {packet.id} payload into Telemetry `{telemetry}`")
-    source = packet.decoded.source or packet.from_
+def on_meshtastic_telemetry_app(packet):
+    telemetry = packet["decoded"]["telemetry"]
+    logger.info(
+        f"Decoded MeshPacket {packet['id']} payload into Telemetry `{telemetry}`"
+    )
+    source = packet["decoded"].get("source", packet["from"])
     telemetry_attributes = {
         "source": source or "unknown",
         "source_long_name": (
@@ -374,154 +358,145 @@ def on_meshtastic_telemetry_app(packet, msg):
             else "unknown"
         ),
     }
-    if (
-        hasattr(telemetry, "device_metrics")
-        and len(bytes(telemetry.device_metrics)) > 0
-    ):
+    if "deviceMetrics" in telemetry:
         logger.info(
-            f"MeshPacket {packet.id} appears to be telemetry of type device metrics"
+            f"MeshPacket {packet['id']} appears to be telemetry of type device metrics"
         )
         meshtastic_telemetry_device_battery_level_percent.set(
-            telemetry.device_metrics.battery_level,
+            telemetry["deviceMetrics"]["batteryLevel"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_device_voltage_volts.set(
-            telemetry.device_metrics.voltage,
+            telemetry["deviceMetrics"]["voltage"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_device_channel_utilization_percent.set(
-            telemetry.device_metrics.channel_utilization,
+            telemetry["deviceMetrics"]["channelUtilization"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_device_air_util_tx_percent.set(
-            telemetry.device_metrics.air_util_tx,
+            telemetry["deviceMetrics"]["airUtilTx"],
             attributes=telemetry_attributes,
         )
-    if (
-        hasattr(telemetry, "environment_metrics")
-        and len(bytes(telemetry.environment_metrics)) > 0
-    ):
+    if "environmentMetrics" in telemetry:
         logger.info(
-            f"MeshPacket {packet.id} appears to be telemetry of type environment metrics"
+            f"MeshPacket {packet['id']} appears to be telemetry of type environment metrics"
         )
         meshtastic_telemetry_env_temperature_celsius.set(
-            telemetry.environment_metrics.temperature,
+            telemetry["environmentMetrics"]["temperature"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_env_relative_humidity_percent.set(
-            telemetry.environment_metrics.relative_humidity,
+            telemetry["environmentMetrics"]["relativeHumidity"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_env_barometric_pressure_pascal.set(
-            telemetry.environment_metrics.barometric_pressure * 10**2,
+            telemetry["environmentMetrics"]["barometricPressure"] * 10**2,
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_env_gas_resistance_ohms.set(
-            telemetry.environment_metrics.gas_resistance / 10**6,
+            telemetry["environmentMetrics"]["gasResistance"] / 10**6,
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_env_voltage_volts.set(
-            telemetry.environment_metrics.voltage,
+            telemetry["environmentMetrics"]["voltage"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_env_current_amperes.set(
-            telemetry.environment_metrics.current * 10**-3,
+            telemetry["environmentMetrics"]["current"] * 10**-3,
             attributes=telemetry_attributes,
         )
-    if (
-        hasattr(telemetry, "air_quality_metrics")
-        and len(bytes(telemetry.air_quality_metrics)) > 0
-    ):
+    if "airQualityMetrics" in telemetry:
         logger.info(
-            f"MeshPacket {packet.id} appears to be telemetry of type air quality metrics"
+            f"MeshPacket {packet['id']} appears to be telemetry of type air quality metrics"
         )
         meshtastic_telemetry_air_quality_pm10_standard.set(
-            telemetry.air_quality_metrics.pm10_standard,
+            telemetry["airQualityMetrics"]["pm10_standard"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_pm25_standard.set(
-            telemetry.air_quality_metrics.pm25_standard,
+            telemetry["airQualityMetrics"]["pm25_standard"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_pm100_standard.set(
-            telemetry.air_quality_metrics.pm100_standard,
+            telemetry["airQualityMetrics"]["pm100_standard"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_pm10_environmental.set(
-            telemetry.air_quality_metrics.pm10_environmental,
+            telemetry["airQualityMetrics"]["pm10_environmental"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_pm25_environmental.set(
-            telemetry.air_quality_metrics.pm25_environmental,
+            telemetry["airQualityMetrics"]["pm25_environmental"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_pm100_environmental.set(
-            telemetry.air_quality_metrics.pm100_environmental,
+            telemetry["airQualityMetrics"]["pm100_environmental"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_particles_03um.set(
-            telemetry.air_quality_metrics.particles_03um,
+            telemetry["airQualityMetrics"]["particles_03um"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_particles_05um.set(
-            telemetry.air_quality_metrics.particles_05um,
+            telemetry["airQualityMetrics"]["particles_05um"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_particles_10um.set(
-            telemetry.air_quality_metrics.particles_10um,
+            telemetry["airQualityMetrics"]["particles_10um"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_particles_25um.set(
-            telemetry.air_quality_metrics.particles_25um,
+            telemetry["airQualityMetrics"]["particles_25um"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_particles_50um.set(
-            telemetry.air_quality_metrics.particles_50um,
+            telemetry["airQualityMetrics"]["particles_50um"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_air_quality_particles_100um.set(
-            telemetry.air_quality_metrics.particles_100um,
+            telemetry["airQualityMetrics"]["particles_100um"],
             attributes=telemetry_attributes,
         )
-    if hasattr(telemetry, "power_metrics") and len(bytes(telemetry.power_metrics)) > 0:
+    if "powerMetrics" in telemetry:
         logger.info(
-            f"MeshPacket {packet.id} appears to be telemetry of type power metrics"
+            f"MeshPacket {packet['id']} appears to be telemetry of type power metrics"
         )
         meshtastic_telemetry_power_ch1_voltage_volts.set(
-            telemetry.power_metrics.ch1_voltage,
+            telemetry["powerMetrics"]["ch1_voltage"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_power_ch1_current_amperes.set(
-            telemetry.power_metrics.ch1_current * 10**-3,
+            telemetry["powerMetrics"]["ch1_current"] * 10**-3,
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_power_ch2_voltage_volts.set(
-            telemetry.power_metrics.ch2_voltage,
+            telemetry["powerMetrics"]["ch2_voltage"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_power_ch2_current_amperes.set(
-            telemetry.power_metrics.ch2_current * 10**-3,
+            telemetry["powerMetrics"]["ch2_current"] * 10**-3,
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_power_ch3_voltage_volts.set(
-            telemetry.power_metrics.ch3_voltage,
+            telemetry["powerMetrics"]["ch3_voltage"],
             attributes=telemetry_attributes,
         )
         meshtastic_telemetry_power_ch3_current_amperes.set(
-            telemetry.power_metrics.ch3_current * 10**-3,
+            telemetry["powerMetrics"]["ch3_current"] * 10**-3,
             attributes=telemetry_attributes,
         )
 
 
-def on_meshtastic_neighborinfo_app(packet, msg):
-    neighbor_info = NeighborInfo().parse(packet.decoded.payload)
+def on_meshtastic_neighborinfo_app(packet):
+    neighbor_info = packet["decoded"]["payload"]
     logger.info(
-        f"Decoded MeshPacket {packet.id} payload into NeighborInfo `{neighbor_info}`"
+        f"Decoded MeshPacket {packet['id']} payload into NeighborInfo `{neighbor_info}`"
     )
 
-    source = neighbor_info.node_id
+    source = neighbor_info["node_id"]
     neighbor_info_attributes = {
-        "source": source or "unknown",
+        "source": source,
         "source_long_name": (
             get_decoded_node_metadata_from_redis(source, "long_name")
             if source
@@ -533,8 +508,8 @@ def on_meshtastic_neighborinfo_app(packet, msg):
             else "unknown"
         ),
     }
-    for n in neighbor_info.neighbors:
-        neighbor_source = n.node_id
+    for n in neighbor_info["neighbors"]:
+        neighbor_source = n["node_id"]
 
         neighbor_info_attributes["neighbor_source"] = neighbor_source or "unknown"
         neighbor_info_attributes["neighbor_source_long_name"] = (
@@ -549,21 +524,21 @@ def on_meshtastic_neighborinfo_app(packet, msg):
         )
 
         meshtastic_neighbor_info_snr_decibels.set(
-            n.snr, attributes=neighbor_info_attributes
+            n["snr"], attributes=neighbor_info_attributes
         )
         meshtastic_neighbor_info_last_rx_time.set(
-            n.last_rx_time, attributes=neighbor_info_attributes
+            n["last_rx_time"], attributes=neighbor_info_attributes
         )
 
 
 def on_message(client, userdata, msg):
     try:
         logger.debug(
-            f"Received UTF-8 payload `{msg.payload.decode()}` from `{msg.topic}` topic"
+            f"Received UTF-8 payload `{msg['payload'].decode()}` from `{msg.topic}` topic"
         )
     except UnicodeDecodeError:
         try:
-            envelope = ServiceEnvelope().parse(msg.payload)
+            envelope = ServiceEnvelope().parse(msg["payload"])
             on_meshtastic_service_envelope(envelope, msg)
         except Exception as e:
             logger.warning(f"Exception occurred while processing ServiceEnvelope: {e}")
@@ -571,23 +546,52 @@ def on_message(client, userdata, msg):
         logger.warning(f"Exception occurred in on_message: {e}")
 
 
+def on_native_message(packet, interface):
+    pass
+    on_meshtastic_mesh_packet(packet)
+    # logger.debug(
+    #     f"Received UTF-8 payload `{packet['payload'].decode()}` from `{packet['to']pic}` topic"
+    # )
+    # try:
+    #     logger.debug(
+    #         f"Received UTF-8 payload `{packet['payload'].decode()}` from `{packet['to']pic}` topic"
+    #     )
+    # except UnicodeDecodeError:
+    #     try:
+    #         envelope = ServiceEnvelope().parse(packet['payload'])
+    #         on_meshtastic_service_envelope(envelope, packet)
+    #     except Exception as e:
+    #         logger.warning(f"Exception occurred while processing ServiceEnvelope: {e}")
+    # except Exception as e:
+    #     logger.warning(f"Exception occurred in on_message: {e}")
+
+
 if __name__ == "__main__":
-    mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    # mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    #
+    # mqttc.on_connect = on_connect
+    # mqttc.on_message = on_message
+    #
+    # if int(config["mqtt_use_tls"]) == 1:
+    #     tlscontext = ssl.create_default_context()
+    #     mqttc.tls_set_context(tlscontext)
+    #
+    # if config["mqtt_username"]:
+    #     mqttc.username_pw_set(config["mqtt_username"], config["mqtt_password"])
+    #
+    # mqttc.connect(
+    #     config["mqtt_address"],
+    #     int(config["mqtt_port"]),
+    #     keepalive=int(config["mqtt_keepalive"]),
+    # )
+    #
+    # mqttc.loop_forever()
 
-    mqttc.on_connect = on_connect
-    mqttc.on_message = on_message
+    pub.subscribe(on_native_message, "meshtastic.receive")
+    iface = meshtastic.serial_interface.SerialInterface(devPath="/dev/ttyACM0")
 
-    if int(config["mqtt_use_tls"]) == 1:
-        tlscontext = ssl.create_default_context()
-        mqttc.tls_set_context(tlscontext)
+    # pub.subscribe(on_recieve, "meshtastic.receive")
+    import time
 
-    if config["mqtt_username"]:
-        mqttc.username_pw_set(config["mqtt_username"], config["mqtt_password"])
-
-    mqttc.connect(
-        config["mqtt_address"],
-        int(config["mqtt_port"]),
-        keepalive=int(config["mqtt_keepalive"]),
-    )
-
-    mqttc.loop_forever()
+    while True:
+        time.sleep(1)
