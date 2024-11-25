@@ -9,6 +9,8 @@ services:
   prometheus:
     image: prom/prometheus:v2.55.1
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
     extra_hosts:
           - "host.docker.internal:host-gateway"
     volumes:
@@ -17,7 +19,7 @@ services:
     networks:
       - mesh-bridge
   grafana:
-    image: grafana/grafana-oss:10.4.2
+    image: grafana/grafana-oss:10.4.13
     restart: unless-stopped
     volumes:
       - grafana_data:/var/lib/grafana
@@ -28,24 +30,26 @@ services:
       - "0.0.0.0:3000:3000"
     networks:
       - mesh-bridge
-  exporter:
-    build: .
-    restart: unless-stopped
-    environment:
-      - MQTT_ADDRESS=mqtt.meshtastic.org
-      - MQTT_USE_TLS=0
-      - MQTT_PORT=1883
-      - MQTT_KEEPALIVE=15
-#      - MQTT_USERNAME=changeme
-#      - MQTT_PASSWORD=changeme
-      - MQTT_TOPIC=msh/EU_433/#
-      - REDIS_URL=redis://redis:6379
-    networks:
-      - mesh-bridge
-  # Redis is being utilised for storing persistent state
+#  exporter:
+#    build: .
+#    restart: unless-stopped
+#    environment:
+#      - MQTT_ADDRESS=mqtt.meshtastic.org
+#      - MQTT_USE_TLS=0
+#      - MQTT_PORT=1883
+#      - MQTT_KEEPALIVE=15
+##      - MQTT_USERNAME=changeme
+##      - MQTT_PASSWORD=changeme
+#      - MQTT_TOPIC=msh/EU_433/#
+#      - REDIS_URL=redis://redis:6379
+#    networks:
+#      - mesh-bridge
+#  # Redis is being utilised for storing persistent state
   redis:
     image: redis:7
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     networks:
