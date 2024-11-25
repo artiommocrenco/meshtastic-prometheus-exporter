@@ -335,8 +335,8 @@ def on_meshtastic_nodeinfo_app(packet):
                 "hw_model": node_info["hwModel"],
                 "is_licensed": str(is_licensed),
             },
-            ex=ex,
         )
+        redis.expire(source, ex)
 
     node_info_attributes = {
         "source": source,
