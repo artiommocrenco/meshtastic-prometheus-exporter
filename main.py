@@ -226,7 +226,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 
 def get_decoded_node_metadata_from_redis(node: float, metadata: str):
-    v = redis.get(f"{node}_{metadata}")
+    v = redis.hget(node, metadata)
     try:
         v = "unknown" if v is None else v.decode("utf-8")
     except UnicodeDecodeError:
@@ -290,15 +290,20 @@ def on_meshtastic_mesh_packet(packet):
     if packet["decoded"]["portnum"] == "NODEINFO_APP":
         on_meshtastic_nodeinfo_app(packet)
     else:
-        known_from = redis.get(f"{packet['from']}_long_name")
-        known_source = redis.get(f"{source}_long_name")
+        known_from = (
+            get_decoded_node_metadata_from_redis(packet["from"], "long_name")
+            != "unknown"
+        )
+        known_source = (
+            get_decoded_node_metadata_from_redis(source, "long_name") != "unknown"
+        )
 
-        if known_from is None:
+        if not known_from:
             logger.info(
                 f"Node {packet['from']} has not yet identified, ignoring the packet {packet['id']}"
             )
             return
-        if known_source is None and packet["decoded"].source != 0:
+        if not known_source and packet["decoded"].get("source", 0) != 0:
             logger.info(
                 f"Node {source} has not yet identified, ignoring the packet {packet['id']}"
             )
@@ -322,10 +327,16 @@ def on_meshtastic_nodeinfo_app(packet):
     is_licensed = node_info.get("isLicensed", 0)
     if source:
         ex = 3600 * 72
-        redis.set(f"{source}_long_name", node_info["longName"], ex=ex)
-        redis.set(f"{source}_short_name", node_info["shortName"], ex=ex)
-        redis.set(f"{source}_hw_model", node_info["hwModel"], ex=ex)
-        redis.set(f"{source}_is_licensed", str(is_licensed), ex=ex)
+        redis.hset(
+            source,
+            mapping={
+                "long_name": node_info["longName"],
+                "short_name": node_info["shortName"],
+                "hw_model": node_info["hwModel"],
+                "is_licensed": str(is_licensed),
+            },
+            ex=ex,
+        )
 
     node_info_attributes = {
         "source": source,
