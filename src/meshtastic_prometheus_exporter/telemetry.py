@@ -8,22 +8,26 @@ logger = logging.getLogger("meshtastic_prometheus_exporter")
 
 def on_device_metrics_telemetry(packet, attributes):
     logger.info(f"MeshPacket {packet['id']} is device metrics telemetry")
-    meshtastic_telemetry_device_battery_level_percent.set(
-        packet["decoded"]["telemetry"]["deviceMetrics"]["batteryLevel"],
-        attributes=attributes,
-    )
-    meshtastic_telemetry_device_voltage_volts.set(
-        packet["decoded"]["telemetry"]["deviceMetrics"]["voltage"],
-        attributes=attributes,
-    )
-    meshtastic_telemetry_device_channel_utilization_percent.set(
-        packet["decoded"]["telemetry"]["deviceMetrics"]["channelUtilization"],
-        attributes=attributes,
-    )
-    meshtastic_telemetry_device_air_util_tx_percent.set(
-        packet["decoded"]["telemetry"]["deviceMetrics"]["airUtilTx"],
-        attributes=attributes,
-    )
+    if "batteryLevel" in packet["decoded"]["telemetry"]["deviceMetrics"]:
+        meshtastic_telemetry_device_battery_level_percent.set(
+            packet["decoded"]["telemetry"]["deviceMetrics"]["batteryLevel"],
+            attributes=attributes,
+        )
+    if "voltage" in packet["decoded"]["telemetry"]["deviceMetrics"]:
+        meshtastic_telemetry_device_voltage_volts.set(
+            packet["decoded"]["telemetry"]["deviceMetrics"]["voltage"],
+            attributes=attributes,
+        )
+    if "channelUtilization" in packet["decoded"]["telemetry"]["deviceMetrics"]:
+        meshtastic_telemetry_device_channel_utilization_percent.set(
+            packet["decoded"]["telemetry"]["deviceMetrics"]["channelUtilization"],
+            attributes=attributes,
+        )
+    if "airUtilTx" in packet["decoded"]["telemetry"]["deviceMetrics"]:
+        meshtastic_telemetry_device_air_util_tx_percent.set(
+            packet["decoded"]["telemetry"]["deviceMetrics"]["airUtilTx"],
+            attributes=attributes,
+        )
 
 
 def on_meshtastic_telemetry_app(packet, source_long_name, source_short_name):
