@@ -25,6 +25,7 @@ dependencies = [
   "redis==5.2.0",
   "meshtastic~=2.5.4",
   "Pypubsub~=4.0.3",
+  "sentry-sdk",
 ]
 
 [project.urls]
@@ -34,13 +35,6 @@ Source = "https://github.com/Artiom Mocrenco/meshtastic-prometheus-exporter"
 
 [tool.hatch.version]
 path = "src/meshtastic_prometheus_exporter/__about__.py"
-
-[tool.hatch.envs.types]
-extra-dependencies = [
-  "mypy>=1.0.0",
-]
-[tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/meshtastic_prometheus_exporter tests}"
 
 [tool.coverage.run]
 source_pkgs = ["meshtastic_prometheus_exporter", "tests"]
@@ -65,3 +59,9 @@ exclude_lines = [
 pythonpath = [
   ".", "src"
 ]
+
+[tool.hatch.envs.hatch-test.scripts]
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
+cov-combine = "coverage combine"
+cov-report = "coverage html"
