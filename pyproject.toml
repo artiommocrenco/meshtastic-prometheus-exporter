@@ -36,6 +36,9 @@ Source = "https://github.com/Artiom Mocrenco/meshtastic-prometheus-exporter"
 [tool.hatch.version]
 path = "src/meshtastic_prometheus_exporter/__about__.py"
 
+[project.scripts]
+meshtastic-prometheus-exporter = "meshtastic_prometheus_exporter.__main__:main"
+
 [tool.coverage.run]
 source_pkgs = ["meshtastic_prometheus_exporter", "tests"]
 branch = true

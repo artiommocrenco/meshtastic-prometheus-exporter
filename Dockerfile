@@ -1,6 +1,5 @@
 FROM python:3.12-slim
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY main.py .
-CMD ["python3", "-u", "main.py"]
+COPY dist/meshtastic_prometheus_exporter*.whl /app
+RUN pip install --no-cache-dir /app/meshtastic_prometheus_exporter*.whl
+ENTRYPOINT ["meshtastic-prometheus-exporter"]

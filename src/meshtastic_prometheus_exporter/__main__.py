@@ -234,7 +234,7 @@ def on_native_message(packet, interface):
         sentry_sdk.capture_exception(e)
 
 
-if __name__ == "__main__":
+def main():
     # mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     #
     # mqttc.on_connect = on_connect
@@ -274,3 +274,7 @@ if __name__ == "__main__":
 
     while True:
         time.sleep(1)
+
+
+if __name__ == "__main__":
+    main()

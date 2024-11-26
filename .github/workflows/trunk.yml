@@ -1,0 +1,172 @@
+name: trunk
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.changes.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+      - name: Install hatch
+        run: >-
+          python3 -m
+          pip install
+          hatch
+      - name: Run tests
+        run: hatch test
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            version:
+              - 'VERSION'
+
+  build:
+    name: Build Python Wheel 📦
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && needs.test.outputs.version-changed == 'true'
+    needs:
+      - test
+    outputs:
+      our-version-major: ${{ steps.our-version-major.outputs.version }}
+      our-version-minor: ${{ steps.our-version-minor.outputs.version }}
+      our-version-full: ${{ steps.our-version-full.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: our-version-major
+        run: |
+          echo version=$(cat VERSION | cut -d '.' -f 1) >> $GITHUB_OUTPUT
+      - id: our-version-minor
+        run: |
+          echo version=$(cat VERSION | cut -d '.' -f 2) >> $GITHUB_OUTPUT
+      - id: our-version-full
+        run: |
+          echo version=$(cat VERSION) >> $GITHUB_OUTPUT
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+      - name: Install hatch
+        run: >-
+          python3 -m
+          pip install
+          hatch
+      - name: Build a binary wheel and a source tarball
+        run: hatch build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  build-and-push-image:
+    name: Build and push container image to GHCR
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && needs.test.outputs.version-changed == 'true'
+    needs:
+      - test
+      - build
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          file: Dockerfile
+          context: .
+          push: true
+          tags: |
+            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ needs.build.outputs.our-version-full }}
+            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ needs.build.outputs.our-version-major }}
+            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:latest
+
+  publish-to-pypi:
+    name: >-
+      Publish 📦 to PyPI
+    if: github.ref == 'refs/heads/main' && needs.test.outputs.version-changed == 'true'
+    needs:
+      - test
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/meshtastic-prometheus-exporter
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          verbose: true
+
+  release:
+    name: >-
+      Create GitHub Release
+    if: github.ref == 'refs/heads/main' && needs.test.outputs.version-changed == 'true'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - build-and-push-image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.71.0
+        env:
+          CUSTOM_TAG: ${{ needs.build.outputs.our-version-full }}
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: true
+          name: ${{ needs.build.outputs.our-version-full }}
+          tag_name: ${{ needs.build.outputs.our-version-full }}
+          generate_release_notes: true
+          token: ${{ github.token }}
