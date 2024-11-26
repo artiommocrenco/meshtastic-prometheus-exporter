@@ -17,10 +17,11 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import json
 import logging
 import os
 import ssl
+import traceback
 from sys import stdout
 from time import time
 import meshtastic.serial_interface
@@ -33,6 +34,34 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
 from prometheus_client import start_http_server
 from pubsub import pub
+from sentry_sdk import add_breadcrumb
+from sentry_sdk.integrations.logging import LoggingIntegration
+
+from meshtastic_prometheus_exporter.neighborinfo import on_meshtastic_neighborinfo_app
+from meshtastic_prometheus_exporter.nodeinfo import on_meshtastic_nodeinfo_app
+from meshtastic_prometheus_exporter.telemetry import on_meshtastic_telemetry_app
+from meshtastic_prometheus_exporter.metrics import *
+from meshtastic_prometheus_exporter.util import (
+    get_decoded_node_metadata_from_redis,
+    save_node_metadata_in_redis,
+)
+import sentry_sdk
+
+
+def before_breadcrumb(crumb, hint):
+    if crumb["category"] == "redis":
+        return None
+    return crumb
+
+
+sentry_sdk.init(
+    dsn="https://d03452fcb06e7141c5c9a1d6ee370e8d@o4508362511286272.ingest.de.sentry.io/4508362517381200",
+    traces_sample_rate=1.0,
+    before_breadcrumb=before_breadcrumb,
+    integrations=[
+        LoggingIntegration(level=logging.INFO, event_level=logging.FATAL),
+    ],
+)
 
 config = {
     "mqtt_address": os.environ.get("MQTT_ADDRESS", "mqtt.meshtastic.org"),
@@ -51,7 +80,8 @@ config = {
     "flood_expire_time": os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60),
 }
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("meshtastic_prometheus_exporter")
+logger.propagate = False
 
 logger.setLevel(getattr(logging, config["log_level"].upper()))
 
@@ -66,12 +96,6 @@ logger.addHandler(handler)
 
 redis = redis.from_url(config["redis_url"], db=0, protocol=3)
 
-headers = {}
-if config["prometheus_token"]:
-    headers = {
-        "Authorization": f'Bearer {config["prometheus_token"]}',
-    }
-
 if config["prometheus_endpoint"] is None:
     reader = PrometheusMetricReader()
     start_http_server(
@@ -84,135 +108,7 @@ provider = MeterProvider(
     # views=[],
 )
 metrics.set_meter_provider(provider)
-meter = metrics.get_meter(__name__)
-
-meshtastic_mesh_packets_total = meter.create_counter(
-    name="meshtastic_mesh_packets_total",
-)
-
-meshtastic_node_info_last_heard_timestamp_seconds = meter.create_gauge(
-    name="meshtastic_node_info_last_heard_timestamp_seconds",
-)
-
-meshtastic_neighbor_info_snr_decibels = meter.create_gauge(
-    name="meshtastic_neighbor_info_snr_decibels",
-)
-
-meshtastic_neighbor_info_last_rx_time = meter.create_gauge(
-    name="meshtastic_neighbor_info_last_rx_time",
-)
-
-meshtastic_telemetry_device_battery_level_percent = meter.create_gauge(
-    name="meshtastic_telemetry_device_battery_level_percent",
-)
-
-meshtastic_telemetry_device_voltage_volts = meter.create_gauge(
-    name="meshtastic_telemetry_device_voltage_volts",
-)
-
-meshtastic_telemetry_device_channel_utilization_percent = meter.create_gauge(
-    name="meshtastic_telemetry_device_channel_utilization_percent",
-)
-
-meshtastic_telemetry_device_air_util_tx_percent = meter.create_gauge(
-    name="meshtastic_telemetry_device_air_util_tx_percent",
-)
-
-meshtastic_telemetry_env_temperature_celsius = meter.create_gauge(
-    name="meshtastic_telemetry_env_temperature_celsius",
-)
-
-meshtastic_telemetry_env_relative_humidity_percent = meter.create_gauge(
-    name="meshtastic_telemetry_env_relative_humidity_percent",
-)
-
-meshtastic_telemetry_env_barometric_pressure_pascal = meter.create_gauge(
-    name="meshtastic_telemetry_env_barometric_pressure_pascal",
-)
-
-meshtastic_telemetry_env_gas_resistance_ohms = meter.create_gauge(
-    name="meshtastic_telemetry_env_gas_resistance_ohms",
-)
-
-meshtastic_telemetry_env_voltage_volts = meter.create_gauge(
-    name="meshtastic_telemetry_env_voltage_volts",
-)
-
-meshtastic_telemetry_env_current_amperes = meter.create_gauge(
-    name="meshtastic_telemetry_env_current_amperes",
-)
-
-meshtastic_telemetry_power_ch1_voltage_volts = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch1_voltage_volts",
-)
-
-meshtastic_telemetry_power_ch1_current_amperes = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch1_current_amperes",
-)
-
-meshtastic_telemetry_power_ch2_voltage_volts = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch2_voltage_volts",
-)
-
-meshtastic_telemetry_power_ch2_current_amperes = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch2_current_amperes",
-)
-
-meshtastic_telemetry_power_ch3_voltage_volts = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch3_voltage_volts",
-)
-
-meshtastic_telemetry_power_ch3_current_amperes = meter.create_gauge(
-    name="meshtastic_telemetry_power_ch3_current_amperes",
-)
-
-meshtastic_telemetry_air_quality_pm10_standard = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_pm10_standard",
-)
-
-meshtastic_telemetry_air_quality_pm25_standard = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_pm25_standard",
-)
-
-meshtastic_telemetry_air_quality_pm100_standard = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_pm100_standard",
-)
-
-meshtastic_telemetry_air_quality_pm10_environmental = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_pm10_environmental",
-)
-
-meshtastic_telemetry_air_quality_pm25_environmental = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_pm25_environmental",
-)
-
-meshtastic_telemetry_air_quality_pm100_environmental = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_pm100_environmental",
-)
-
-meshtastic_telemetry_air_quality_particles_03um = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_particles_03um",
-)
-
-meshtastic_telemetry_air_quality_particles_05um = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_particles_05um",
-)
-
-meshtastic_telemetry_air_quality_particles_10um = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_particles_10um",
-)
-
-meshtastic_telemetry_air_quality_particles_25um = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_particles_25um",
-)
-
-meshtastic_telemetry_air_quality_particles_50um = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_particles_50um",
-)
-
-meshtastic_telemetry_air_quality_particles_100um = meter.create_gauge(
-    name="meshtastic_telemetry_air_quality_particles_100um",
-)
+meter = metrics.get_meter("meshtastic_prometheus_exporter")
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -223,15 +119,6 @@ def on_connect(client, userdata, flags, reason_code, properties):
     else:
         logger.info(f"Connected to MQTT server with result code {reason_code}")
         client.subscribe(config["mqtt_topic"])
-
-
-def get_decoded_node_metadata_from_redis(node: float, metadata: str):
-    v = redis.hget(node, metadata)
-    try:
-        v = "unknown" if v is None else v.decode("utf-8")
-    except UnicodeDecodeError:
-        v = "unknown"
-    return v
 
 
 def on_meshtastic_service_envelope(envelope, msg):
@@ -247,24 +134,34 @@ def on_meshtastic_service_envelope(envelope, msg):
 
 
 def on_meshtastic_mesh_packet(packet):
-    if hasattr(packet, "encrypted"):
-        logger.debug(f"Skipping processing of encrypted packet {packet['id']}")
+    if packet.get("encrypted", False):
+        logger.info(f"Skipping encrypted packet {packet['id']}")
         return
 
     unique = redis.set(str(packet["id"]), 1, nx=True, ex=config["flood_expire_time"])
 
     if not unique:
-        logger.debug(f"Skipping processing of duplicate packet {packet['id']}")
+        logger.info(f"Skipping duplicate packet {packet['id']}")
         return
 
     source = packet["decoded"].get("source", packet["from"])
 
-    source_long_name = get_decoded_node_metadata_from_redis(source, "long_name")
-    source_short_name = get_decoded_node_metadata_from_redis(source, "short_name")
-    from_long_name = get_decoded_node_metadata_from_redis(packet["from"], "long_name")
-    from_short_name = get_decoded_node_metadata_from_redis(packet["from"], "short_name")
-    to_long_name = get_decoded_node_metadata_from_redis(packet["to"], "long_name")
-    to_short_name = get_decoded_node_metadata_from_redis(packet["to"], "short_name")
+    source_long_name = get_decoded_node_metadata_from_redis(redis, source, "long_name")
+    source_short_name = get_decoded_node_metadata_from_redis(
+        redis, source, "short_name"
+    )
+    from_long_name = get_decoded_node_metadata_from_redis(
+        redis, packet["from"], "long_name"
+    )
+    from_short_name = get_decoded_node_metadata_from_redis(
+        redis, packet["from"], "short_name"
+    )
+    to_long_name = get_decoded_node_metadata_from_redis(
+        redis, packet["to"], "long_name"
+    )
+    to_short_name = get_decoded_node_metadata_from_redis(
+        redis, packet["to"], "short_name"
+    )
 
     # https://buf.build/meshtastic/protobufs/file/main:meshtastic/portnums.proto
     meshtastic_mesh_packets_total.add(
@@ -288,293 +185,53 @@ def on_meshtastic_mesh_packet(packet):
         },
     )
     if packet["decoded"]["portnum"] == "NODEINFO_APP":
-        on_meshtastic_nodeinfo_app(packet)
+        on_meshtastic_nodeinfo_app(redis, packet)
     else:
-        known_from = (
-            get_decoded_node_metadata_from_redis(packet["from"], "long_name")
+        known_source = (
+            get_decoded_node_metadata_from_redis(redis, source, "long_name")
             != "unknown"
         )
-        known_source = (
-            get_decoded_node_metadata_from_redis(source, "long_name") != "unknown"
-        )
 
-        if not known_from:
+        if not known_source:
             logger.info(
-                f"Node {packet['from']} has not yet identified, ignoring the packet {packet['id']}"
-            )
-            return
-        if not known_source and packet["decoded"].get("source", 0) != 0:
-            logger.info(
-                f"Node {source} has not yet identified, ignoring the packet {packet['id']}"
+                f"NodeInfo is now yet known for Node {source}, ignoring the packet {packet['id']}"
             )
             return
 
     if packet["decoded"]["portnum"] == "TELEMETRY_APP":
-        on_meshtastic_telemetry_app(packet)
+        on_meshtastic_telemetry_app(packet, source_long_name, source_short_name)
 
     if packet["decoded"]["portnum"] == "NEIGHBORINFO_APP":
-        on_meshtastic_neighborinfo_app(packet)
-
-
-def on_meshtastic_nodeinfo_app(packet):
-    node_info = packet["decoded"]["user"]
-
-    logger.info(
-        f"Decoded MeshPacket {packet['id']} payload into NodeInfo `{node_info}`"
-    )
-
-    source = packet["decoded"].get("source", packet["from"])
-    is_licensed = node_info.get("isLicensed", 0)
-    if source:
-        ex = 3600 * 72
-        redis.hset(
-            source,
-            mapping={
-                "long_name": node_info["longName"],
-                "short_name": node_info["shortName"],
-                "hw_model": node_info["hwModel"],
-                "is_licensed": str(is_licensed),
-            },
-        )
-        redis.expire(source, ex)
-
-    node_info_attributes = {
-        "source": source,
-        "user": node_info["id"],
-        "source_long_name": node_info["longName"],
-        "source_short_name": node_info["shortName"],
-        "is_licensed": str(is_licensed),
-    }
-    meshtastic_node_info_last_heard_timestamp_seconds.set(
-        time.time(), attributes=node_info_attributes
-    )
-
-
-def on_meshtastic_telemetry_app(packet):
-    telemetry = packet["decoded"]["telemetry"]
-    logger.info(
-        f"Decoded MeshPacket {packet['id']} payload into Telemetry `{telemetry}`"
-    )
-    source = packet["decoded"].get("source", packet["from"])
-    telemetry_attributes = {
-        "source": source or "unknown",
-        "source_long_name": (
-            get_decoded_node_metadata_from_redis(source, "long_name")
-            if source
-            else "unknown"
-        ),
-        "source_short_name": (
-            get_decoded_node_metadata_from_redis(source, "short_name")
-            if source
-            else "unknown"
-        ),
-    }
-    if "deviceMetrics" in telemetry:
-        logger.info(
-            f"MeshPacket {packet['id']} appears to be telemetry of type device metrics"
-        )
-        meshtastic_telemetry_device_battery_level_percent.set(
-            telemetry["deviceMetrics"]["batteryLevel"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_device_voltage_volts.set(
-            telemetry["deviceMetrics"]["voltage"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_device_channel_utilization_percent.set(
-            telemetry["deviceMetrics"]["channelUtilization"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_device_air_util_tx_percent.set(
-            telemetry["deviceMetrics"]["airUtilTx"],
-            attributes=telemetry_attributes,
-        )
-    if "environmentMetrics" in telemetry:
-        logger.info(
-            f"MeshPacket {packet['id']} appears to be telemetry of type environment metrics"
-        )
-        meshtastic_telemetry_env_temperature_celsius.set(
-            telemetry["environmentMetrics"]["temperature"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_env_relative_humidity_percent.set(
-            telemetry["environmentMetrics"]["relativeHumidity"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_env_barometric_pressure_pascal.set(
-            telemetry["environmentMetrics"]["barometricPressure"] * 10**2,
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_env_gas_resistance_ohms.set(
-            telemetry["environmentMetrics"]["gasResistance"] / 10**6,
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_env_voltage_volts.set(
-            telemetry["environmentMetrics"]["voltage"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_env_current_amperes.set(
-            telemetry["environmentMetrics"]["current"] * 10**-3,
-            attributes=telemetry_attributes,
-        )
-    if "airQualityMetrics" in telemetry:
-        logger.info(
-            f"MeshPacket {packet['id']} appears to be telemetry of type air quality metrics"
-        )
-        meshtastic_telemetry_air_quality_pm10_standard.set(
-            telemetry["airQualityMetrics"]["pm10_standard"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_pm25_standard.set(
-            telemetry["airQualityMetrics"]["pm25_standard"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_pm100_standard.set(
-            telemetry["airQualityMetrics"]["pm100_standard"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_pm10_environmental.set(
-            telemetry["airQualityMetrics"]["pm10_environmental"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_pm25_environmental.set(
-            telemetry["airQualityMetrics"]["pm25_environmental"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_pm100_environmental.set(
-            telemetry["airQualityMetrics"]["pm100_environmental"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_particles_03um.set(
-            telemetry["airQualityMetrics"]["particles_03um"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_particles_05um.set(
-            telemetry["airQualityMetrics"]["particles_05um"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_particles_10um.set(
-            telemetry["airQualityMetrics"]["particles_10um"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_particles_25um.set(
-            telemetry["airQualityMetrics"]["particles_25um"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_particles_50um.set(
-            telemetry["airQualityMetrics"]["particles_50um"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_air_quality_particles_100um.set(
-            telemetry["airQualityMetrics"]["particles_100um"],
-            attributes=telemetry_attributes,
-        )
-    if "powerMetrics" in telemetry:
-        logger.info(
-            f"MeshPacket {packet['id']} appears to be telemetry of type power metrics"
-        )
-        meshtastic_telemetry_power_ch1_voltage_volts.set(
-            telemetry["powerMetrics"]["ch1_voltage"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_power_ch1_current_amperes.set(
-            telemetry["powerMetrics"]["ch1_current"] * 10**-3,
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_power_ch2_voltage_volts.set(
-            telemetry["powerMetrics"]["ch2_voltage"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_power_ch2_current_amperes.set(
-            telemetry["powerMetrics"]["ch2_current"] * 10**-3,
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_power_ch3_voltage_volts.set(
-            telemetry["powerMetrics"]["ch3_voltage"],
-            attributes=telemetry_attributes,
-        )
-        meshtastic_telemetry_power_ch3_current_amperes.set(
-            telemetry["powerMetrics"]["ch3_current"] * 10**-3,
-            attributes=telemetry_attributes,
+        on_meshtastic_neighborinfo_app(
+            redis, packet, source_long_name, source_short_name
         )
 
 
-def on_meshtastic_neighborinfo_app(packet):
-    neighbor_info = packet["decoded"]["payload"]
-    logger.info(
-        f"Decoded MeshPacket {packet['id']} payload into NeighborInfo `{neighbor_info}`"
-    )
-
-    source = neighbor_info["node_id"]
-    neighbor_info_attributes = {
-        "source": source,
-        "source_long_name": (
-            get_decoded_node_metadata_from_redis(source, "long_name")
-            if source
-            else "unknown"
-        ),
-        "source_short_name": (
-            get_decoded_node_metadata_from_redis(source, "short_name")
-            if source
-            else "unknown"
-        ),
-    }
-    for n in neighbor_info["neighbors"]:
-        neighbor_source = n["node_id"]
-
-        neighbor_info_attributes["neighbor_source"] = neighbor_source or "unknown"
-        neighbor_info_attributes["neighbor_source_long_name"] = (
-            get_decoded_node_metadata_from_redis(neighbor_source, "long_name")
-            if source
-            else "unknown"
-        )
-        neighbor_info_attributes["neighbor_source_short_name"] = (
-            get_decoded_node_metadata_from_redis(neighbor_source, "short_name")
-            if source
-            else "unknown"
-        )
-
-        meshtastic_neighbor_info_snr_decibels.set(
-            n["snr"], attributes=neighbor_info_attributes
-        )
-        meshtastic_neighbor_info_last_rx_time.set(
-            n["last_rx_time"], attributes=neighbor_info_attributes
-        )
-
-
-def on_message(client, userdata, msg):
-    try:
-        logger.debug(
-            f"Received UTF-8 payload `{msg['payload'].decode()}` from `{msg.topic}` topic"
-        )
-    except UnicodeDecodeError:
-        try:
-            envelope = ServiceEnvelope().parse(msg["payload"])
-            on_meshtastic_service_envelope(envelope, msg)
-        except Exception as e:
-            logger.warning(f"Exception occurred while processing ServiceEnvelope: {e}")
-    except Exception as e:
-        logger.warning(f"Exception occurred in on_message: {e}")
+# def on_message(client, userdata, msg):
+#     try:
+#         logger.debug(
+#             f"Received UTF-8 payload `{msg['payload'].decode()}` from `{msg.topic}` topic"
+#         )
+#     except UnicodeDecodeError:
+#         try:
+#             envelope = ServiceEnvelope().parse(msg["payload"])
+#             on_meshtastic_service_envelope(envelope, msg)
+#         except Exception as e:
+#             logger.warning(f"Exception occurred while processing ServiceEnvelope: {e}")
+#     except Exception as e:
+#         logger.warning(f"Exception occurred in on_message: {e}")
 
 
 def on_native_message(packet, interface):
-    pass
-    on_meshtastic_mesh_packet(packet)
-    # logger.debug(
-    #     f"Received UTF-8 payload `{packet['payload'].decode()}` from `{packet['to']pic}` topic"
-    # )
-    # try:
-    #     logger.debug(
-    #         f"Received UTF-8 payload `{packet['payload'].decode()}` from `{packet['to']pic}` topic"
-    #     )
-    # except UnicodeDecodeError:
-    #     try:
-    #         envelope = ServiceEnvelope().parse(packet['payload'])
-    #         on_meshtastic_service_envelope(envelope, packet)
-    #     except Exception as e:
-    #         logger.warning(f"Exception occurred while processing ServiceEnvelope: {e}")
-    # except Exception as e:
-    #     logger.warning(f"Exception occurred in on_message: {e}")
+    try:
+        on_meshtastic_mesh_packet(packet)
+    except Exception as e:
+        logger.error(
+            f"{e} occurred while processing MeshPacket {packet['id']}, please consider submitting a PR/issue on GitHub: `{json.dumps(packet, default=repr)}` {';'.join(traceback.format_exc().splitlines())
+}"
+        )
+
+        sentry_sdk.capture_exception(e)
 
 
 if __name__ == "__main__":
@@ -601,7 +258,18 @@ if __name__ == "__main__":
     pub.subscribe(on_native_message, "meshtastic.receive")
     iface = meshtastic.serial_interface.SerialInterface(devPath="/dev/ttyACM0")
 
-    # pub.subscribe(on_recieve, "meshtastic.receive")
+    if hasattr(iface, "nodes"):
+        for n in iface.nodes.values():
+            save_node_metadata_in_redis(
+                redis,
+                n["num"],
+                {
+                    "longName": n["user"]["longName"],
+                    "shortName": n["user"]["shortName"],
+                    "hwModel": n["user"]["hwModel"],
+                },
+            )
+
     import time
 
     while True:
