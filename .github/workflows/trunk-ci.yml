@@ -3,9 +3,26 @@ name: trunk-ci
 on: push
 
 jobs:
-  test-cs:
-    name: Test code style
+
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+
     steps:
       - uses: actions/checkout@v4
       - uses: psf/black@stable
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install hatch
+        run: >-
+          python3 -m
+          pip install
+          hatch
+          --user
+      - name: Run tests
+        run: hatch test
