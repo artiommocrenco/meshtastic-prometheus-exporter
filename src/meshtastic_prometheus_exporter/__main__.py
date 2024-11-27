@@ -25,7 +25,9 @@ import time
 import traceback
 from sys import stdout
 
+import meshtastic.ble_interface
 import meshtastic.serial_interface
+import meshtastic.tcp_interface
 import redis
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.metrics import MeterProvider
@@ -47,7 +49,12 @@ from meshtastic_prometheus_exporter.util import (
 
 config = {
     "meshtastic_interface": os.environ.get("MESHTASTIC_INTERFACE"),
-    "serial_device": os.environ.get("SERIAL_DEVICE", "/dev/ttyACM0"),
+    "interface_serial_device": os.environ.get("SERIAL_DEVICE", "/dev/ttyACM0"),
+    "interface_tcp_addr": os.environ.get("INTERFACE_TCP_ADDR"),
+    "interface_tcp_port": os.environ.get(
+        "INTERFACE_TCP_PORT", meshtastic.tcp_interface.DEFAULT_TCP_PORT
+    ),
+    "interface_ble_addr": os.environ.get("INTERFACE_BLE_ADDR", "/dev/ttyACM0"),
     "mqtt_address": os.environ.get("MQTT_ADDRESS", "mqtt.meshtastic.org"),
     "mqtt_use_tls": os.environ.get("MQTT_USE_TLS", False),
     "mqtt_port": os.environ.get("MQTT_PORT", 1883),
@@ -282,16 +289,30 @@ def main():
     #
     # mqttc.loop_forever()
     try:
-        if config.get("meshtastic_interface") not in ["MQTT", "SERIAL"]:
+        if config.get("meshtastic_interface") not in ["MQTT", "SERIAL", "TCP", "BLE"]:
             logger.fatal(
                 f"Invalid value for MESHTASTIC_INTERFACE: {config['meshtastic_interface']}. Must be one of: MQTT, SERIAL"
             )
             sys.exit(1)
 
         pub.subscribe(on_native_message, "meshtastic.receive")
-        iface = meshtastic.serial_interface.SerialInterface(
-            devPath=config.get("serial_device")
-        )
+
+        if config.get("meshtastic_interface") == "SERIAL":
+            iface = meshtastic.serial_interface.SerialInterface(
+                devPath=config.get("serial_device")
+            )
+        elif config.get("meshtastic_interface") == "TCP":
+            iface = meshtastic.tcp_interface.TCPInterface(
+                hostname=config.get("interface_tcp_addr"),
+                portNumber=int(config.get("interface_tcp_port")),
+            )
+        elif config.get("meshtastic_interface") == "BLE":
+            iface = meshtastic.ble_interface.BLEInterface(
+                address=config.get("interface_ble_addr"),
+            )
+        else:
+            logger.fatal("MQTT temporarily broken")
+            sys.exit(1)
 
         if hasattr(iface, "nodes"):
             for n in iface.nodes.values():
