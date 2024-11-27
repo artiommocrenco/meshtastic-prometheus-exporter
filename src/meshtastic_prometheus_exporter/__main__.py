@@ -268,6 +268,14 @@ def on_native_message(packet, interface):
             sentry_sdk.capture_exception(e)
 
 
+def on_native_connection_established(interface, topic=pub.AUTO_TOPIC):
+    logger.info(f"Connected to device over {type(interface).__name__}")
+
+
+def on_native_connection_lost(interface, topic=pub.AUTO_TOPIC):
+    logger.warning(f"Lost connection to device over {type(interface).__name__}")
+
+
 def main():
     # mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     #
@@ -289,6 +297,10 @@ def main():
     #
     # mqttc.loop_forever()
     try:
+        logger.info(
+            "Share ideas and vote for new features https://github.com/artiommocrenco/meshtastic-prometheus-exporter/discussions/categories/ideas"
+        )
+
         if config.get("meshtastic_interface") not in ["MQTT", "SERIAL", "TCP", "BLE"]:
             logger.fatal(
                 f"Invalid value for MESHTASTIC_INTERFACE: {config['meshtastic_interface']}. Must be one of: MQTT, SERIAL"
@@ -296,6 +308,10 @@ def main():
             sys.exit(1)
 
         pub.subscribe(on_native_message, "meshtastic.receive")
+        pub.subscribe(
+            on_native_connection_established, "meshtastic.connection.established"
+        )
+        pub.subscribe(on_native_connection_lost, "meshtastic.connection.lost")
 
         if config.get("meshtastic_interface") == "SERIAL":
             iface = meshtastic.serial_interface.SerialInterface(
@@ -314,7 +330,10 @@ def main():
             logger.fatal("MQTT temporarily broken")
             sys.exit(1)
 
-        if hasattr(iface, "nodes"):
+        if hasattr(iface, "nodes") and len(iface.nodes) > 0:
+            logger.info(
+                f"NodeDB is available, saving metadata in Redis for {len(iface.nodes.values())} nodes"
+            )
             for n in iface.nodes.values():
                 save_node_metadata_in_redis(
                     redis,
@@ -325,6 +344,16 @@ def main():
                         "hwModel": n["user"]["hwModel"],
                     },
                 )
+        else:
+            logger.warning(
+                "Device NodeDB is empty or not available. NodeInfo are not sent often, so populating local NodeDB (stored in Redis) may take from several hours to several days or more."
+            )
+            logger.warning(
+                "Consider first connecting a node with populated NodeDB over Serial, BLE or TCP interface, so that Redis is populated with NodeInfo faster."
+            )
+
+        while True:
+            time.sleep(1)
 
     except Exception as e:
         logger.fatal(
