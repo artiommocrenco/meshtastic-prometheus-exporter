@@ -20,50 +20,41 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import logging
 import os
-import ssl
+import sys
+import time
 import traceback
 from sys import stdout
-from time import time
+
+import meshtastic.ble_interface
 import meshtastic.serial_interface
-import paho.mqtt.client as mqtt
+import meshtastic.tcp_interface
 import redis
-from opentelemetry import metrics
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.metrics import MeterProvider
-
 from opentelemetry.sdk.resources import Resource
 from prometheus_client import start_http_server
 from pubsub import pub
-from sentry_sdk import add_breadcrumb
-from sentry_sdk.integrations.logging import LoggingIntegration
+from redis import BusyLoadingError
+from redis.backoff import ExponentialBackoff
+from redis.retry import Retry
 
+from meshtastic_prometheus_exporter.metrics import *
 from meshtastic_prometheus_exporter.neighborinfo import on_meshtastic_neighborinfo_app
 from meshtastic_prometheus_exporter.nodeinfo import on_meshtastic_nodeinfo_app
 from meshtastic_prometheus_exporter.telemetry import on_meshtastic_telemetry_app
-from meshtastic_prometheus_exporter.metrics import *
 from meshtastic_prometheus_exporter.util import (
     get_decoded_node_metadata_from_redis,
     save_node_metadata_in_redis,
 )
-import sentry_sdk
-
-
-def before_breadcrumb(crumb, hint):
-    if crumb["category"] == "redis":
-        return None
-    return crumb
-
-
-sentry_sdk.init(
-    dsn="https://d03452fcb06e7141c5c9a1d6ee370e8d@o4508362511286272.ingest.de.sentry.io/4508362517381200",
-    traces_sample_rate=1.0,
-    before_breadcrumb=before_breadcrumb,
-    integrations=[
-        LoggingIntegration(level=logging.INFO, event_level=logging.FATAL),
-    ],
-)
 
 config = {
+    "meshtastic_interface": os.environ.get("MESHTASTIC_INTERFACE"),
+    "interface_serial_device": os.environ.get("SERIAL_DEVICE", "/dev/ttyACM0"),
+    "interface_tcp_addr": os.environ.get("INTERFACE_TCP_ADDR"),
+    "interface_tcp_port": os.environ.get(
+        "INTERFACE_TCP_PORT", meshtastic.tcp_interface.DEFAULT_TCP_PORT
+    ),
+    "interface_ble_addr": os.environ.get("INTERFACE_BLE_ADDR", "/dev/ttyACM0"),
     "mqtt_address": os.environ.get("MQTT_ADDRESS", "mqtt.meshtastic.org"),
     "mqtt_use_tls": os.environ.get("MQTT_USE_TLS", False),
     "mqtt_port": os.environ.get("MQTT_PORT", 1883),
@@ -71,13 +62,16 @@ config = {
     "mqtt_username": os.environ.get("MQTT_USERNAME"),
     "mqtt_password": os.environ.get("MQTT_PASSWORD"),
     "mqtt_topic": os.environ.get("MQTT_TOPIC", "msh/#"),
-    "prometheus_endpoint": os.environ.get("PROMETHEUS_ENDPOINT"),
-    "prometheus_token": os.environ.get("PROMETHEUS_TOKEN"),
     "prometheus_server_addr": os.environ.get("PROMETHEUS_SERVER_ADDR", "0.0.0.0"),
     "prometheus_server_port": os.environ.get("PROMETHEUS_SERVER_PORT", 9464),
     "redis_url": os.environ.get("REDIS_URL", "redis://localhost:6379"),
     "log_level": os.environ.get("LOG_LEVEL", "INFO"),
     "flood_expire_time": os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60),
+    "enable_sentry": os.environ.get("ENABLE_SENTRY", False),
+    "sentry_dsn": os.environ.get(
+        "SENTRY_DSN",
+        "https://d03452fcb06e7141c5c9a1d6ee370e8d@o4508362511286272.ingest.de.sentry.io/4508362517381200",
+    ),
 }
 
 logger = logging.getLogger("meshtastic_prometheus_exporter")
@@ -94,21 +88,61 @@ handler.setFormatter(
 
 logger.addHandler(handler)
 
-redis = redis.from_url(config["redis_url"], db=0, protocol=3)
+if int(config["enable_sentry"]) == 1:
+    import sentry_sdk
+    from sentry_sdk import add_breadcrumb
+    from sentry_sdk.integrations.logging import LoggingIntegration
 
-if config["prometheus_endpoint"] is None:
+    logger.info(
+        "Enabling error reporting via Sentry. Your unmodified MeshPackets will be sent to maintainers of this project in case of runtime errors. To disable, set ENABLE_SENTRY environment variable to 0"
+    )
+
+    def before_breadcrumb(crumb, hint):
+        if crumb["category"] == "redis":
+            return None
+        return crumb
+
+    sentry_sdk.init(
+        dsn=config.get("sentry_dsn"),
+        traces_sample_rate=1.0,
+        before_breadcrumb=before_breadcrumb,
+        integrations=[
+            LoggingIntegration(level=logging.INFO, event_level=logging.FATAL),
+        ],
+    )
+else:
+    logger.info(
+        "Error reporting via Sentry is disabled. If you want to send your unmodified MeshPackets to maintainers of this project in case of runtime errors, set ENABLE_SENTRY environment variable to 1"
+    )
+
+
+try:
     reader = PrometheusMetricReader()
     start_http_server(
         port=config["prometheus_server_port"], addr=config["prometheus_server_addr"]
     )
 
-provider = MeterProvider(
-    resource=Resource.create(attributes={"service.name": "meshtastic"}),
-    metric_readers=[reader],
-    # views=[],
-)
-metrics.set_meter_provider(provider)
-meter = metrics.get_meter("meshtastic_prometheus_exporter")
+    provider = MeterProvider(
+        resource=Resource.create(attributes={"service.name": "meshtastic"}),
+        metric_readers=[reader],
+        # views=[],
+    )
+    metrics.set_meter_provider(provider)
+    meter = metrics.get_meter("meshtastic_prometheus_exporter")
+
+    redis = redis.from_url(
+        config["redis_url"],
+        db=0,
+        protocol=3,
+        retry=Retry(ExponentialBackoff(10, 1), 3),
+        retry_on_error=[BusyLoadingError, ConnectionError, TimeoutError],
+    )
+
+except Exception as e:
+    logger.fatal(
+        f"Exception occurred while starting up: {';'.join(traceback.format_exc().splitlines())}"
+    )
+    sys.exit(1)
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -230,8 +264,16 @@ def on_native_message(packet, interface):
             f"{e} occurred while processing MeshPacket {packet['id']}, please consider submitting a PR/issue on GitHub: `{json.dumps(packet, default=repr)}` {';'.join(traceback.format_exc().splitlines())
 }"
         )
+        if "sentry_sdk" in globals():
+            sentry_sdk.capture_exception(e)
 
-        sentry_sdk.capture_exception(e)
+
+def on_native_connection_established(interface, topic=pub.AUTO_TOPIC):
+    logger.info(f"Connected to device over {type(interface).__name__}")
+
+
+def on_native_connection_lost(interface, topic=pub.AUTO_TOPIC):
+    logger.warning(f"Lost connection to device over {type(interface).__name__}")
 
 
 def main():
@@ -254,23 +296,70 @@ def main():
     # )
     #
     # mqttc.loop_forever()
+    try:
+        logger.info(
+            "Share ideas and vote for new features https://github.com/artiommocrenco/meshtastic-prometheus-exporter/discussions/categories/ideas"
+        )
 
-    pub.subscribe(on_native_message, "meshtastic.receive")
-    iface = meshtastic.serial_interface.SerialInterface(devPath="/dev/ttyACM0")
+        if config.get("meshtastic_interface") not in ["MQTT", "SERIAL", "TCP", "BLE"]:
+            logger.fatal(
+                f"Invalid value for MESHTASTIC_INTERFACE: {config['meshtastic_interface']}. Must be one of: MQTT, SERIAL"
+            )
+            sys.exit(1)
 
-    if hasattr(iface, "nodes"):
-        for n in iface.nodes.values():
-            save_node_metadata_in_redis(
-                redis,
-                n["num"],
-                {
-                    "longName": n["user"]["longName"],
-                    "shortName": n["user"]["shortName"],
-                    "hwModel": n["user"]["hwModel"],
-                },
+        pub.subscribe(on_native_message, "meshtastic.receive")
+        pub.subscribe(
+            on_native_connection_established, "meshtastic.connection.established"
+        )
+        pub.subscribe(on_native_connection_lost, "meshtastic.connection.lost")
+
+        if config.get("meshtastic_interface") == "SERIAL":
+            iface = meshtastic.serial_interface.SerialInterface(
+                devPath=config.get("serial_device")
+            )
+        elif config.get("meshtastic_interface") == "TCP":
+            iface = meshtastic.tcp_interface.TCPInterface(
+                hostname=config.get("interface_tcp_addr"),
+                portNumber=int(config.get("interface_tcp_port")),
+            )
+        elif config.get("meshtastic_interface") == "BLE":
+            iface = meshtastic.ble_interface.BLEInterface(
+                address=config.get("interface_ble_addr"),
+            )
+        else:
+            logger.fatal("MQTT temporarily broken")
+            sys.exit(1)
+
+        if hasattr(iface, "nodes") and len(iface.nodes) > 0:
+            logger.info(
+                f"NodeDB is available, saving metadata in Redis for {len(iface.nodes.values())} nodes"
+            )
+            for n in iface.nodes.values():
+                save_node_metadata_in_redis(
+                    redis,
+                    n["num"],
+                    {
+                        "longName": n["user"]["longName"],
+                        "shortName": n["user"]["shortName"],
+                        "hwModel": n["user"]["hwModel"],
+                    },
+                )
+        else:
+            logger.warning(
+                "Device NodeDB is empty or not available. NodeInfo are not sent often, so populating local NodeDB (stored in Redis) may take from several hours to several days or more."
+            )
+            logger.warning(
+                "Consider first connecting a node with populated NodeDB over Serial, BLE or TCP interface, so that Redis is populated with NodeInfo faster."
             )
 
-    import time
+        while True:
+            time.sleep(1)
+
+    except Exception as e:
+        logger.fatal(
+            f"Exception occurred while starting up: {';'.join(traceback.format_exc().splitlines())}"
+        )
+        sys.exit(1)
 
     while True:
         time.sleep(1)

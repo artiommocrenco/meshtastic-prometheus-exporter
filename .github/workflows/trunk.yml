@@ -31,7 +31,7 @@ jobs:
         with:
           filters: |
             version:
-              - 'VERSION'
+              - 'src/meshtastic_prometheus_exporter/__about__.py'
 
   build:
     name: Build Python Wheel 📦
@@ -47,13 +47,13 @@ jobs:
       - uses: actions/checkout@v4
       - id: our-version-major
         run: |
-          echo version=$(cat VERSION | cut -d '.' -f 1) >> $GITHUB_OUTPUT
+          echo version=$(grep -oP '(?<=__version__ = ")[^"]*' src/meshtastic_prometheus_exporter/__about__.py | cut -d '.' -f 1) >> $GITHUB_OUTPUT
       - id: our-version-minor
         run: |
-          echo version=$(cat VERSION | cut -d '.' -f 2) >> $GITHUB_OUTPUT
+          echo version=$(grep -oP '(?<=__version__ = ")[^"]*' src/meshtastic_prometheus_exporter/__about__.py | cut -d '.' -f 2) >> $GITHUB_OUTPUT
       - id: our-version-full
         run: |
-          echo version=$(cat VERSION) >> $GITHUB_OUTPUT
+          echo version=$(grep -oP '(?<=__version__ = ")[^"]*' src/meshtastic_prometheus_exporter/__about__.py) >> $GITHUB_OUTPUT
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
