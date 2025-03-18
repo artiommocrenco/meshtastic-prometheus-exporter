@@ -4,6 +4,20 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      opentelemetry:
+        patterns:
+          - "opentelemetry-api"
+          - "opentelemetry-exporter-prometheus"
+          - "opentelemetry-sdk"
+    ignore:
+      - dependency-name: "sentry-sdk"
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    allow:
+      - dependency-name: "sentry-sdk"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
