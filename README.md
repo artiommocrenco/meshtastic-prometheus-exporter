@@ -2,6 +2,8 @@
 
 ![meshtasticexporter](https://github.com/artiommocrenco/meshtastic-prometheus-exporter/assets/28516476/162a2fab-5804-46d0-a97a-aa84e388ef58)
 
+Meshtastic Prometheus Exporter captures and parses every MeshPacket from your Meshtastic network, exposing detailed metrics about the packets. It supports data collection via MQTT, BLE, Serial, or TCP, and makes these metrics available to Prometheus. It comes with grafana dashboards that help visualize network performance, node status, and telemetry for real-time or historical monitoring.
+
 ## Supported metrics
 
 See [SUPPORTED_METRICS.md](SUPPORTED_METRICS.md) for a list of supported metrics
