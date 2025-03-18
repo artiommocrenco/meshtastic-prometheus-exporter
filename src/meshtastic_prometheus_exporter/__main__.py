@@ -20,18 +20,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import logging
 import os
+import ssl
 import sys
 import time
 import traceback
 from sys import stdout
+from google.protobuf.json_format import MessageToDict
 
+import google.protobuf.message
 import meshtastic.ble_interface
 import meshtastic.serial_interface
 import meshtastic.tcp_interface
 import redis
+from google.protobuf.json_format import MessageToDict
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
+import paho.mqtt.client as mqtt
+from meshtastic.protobuf import mqtt_pb2
 from prometheus_client import start_http_server
 from pubsub import pub
 from redis import BusyLoadingError
@@ -61,7 +67,7 @@ config = {
     "mqtt_keepalive": os.environ.get("MQTT_KEEPALIVE", 15),
     "mqtt_username": os.environ.get("MQTT_USERNAME"),
     "mqtt_password": os.environ.get("MQTT_PASSWORD"),
-    "mqtt_topic": os.environ.get("MQTT_TOPIC", "msh/#"),
+    "mqtt_topic": os.environ.get("MQTT_TOPIC", "msh/EU_433/#"),
     "prometheus_server_addr": os.environ.get("PROMETHEUS_SERVER_ADDR", "0.0.0.0"),
     "prometheus_server_port": os.environ.get("PROMETHEUS_SERVER_PORT", 9464),
     "redis_url": os.environ.get("REDIS_URL", "redis://localhost:6379"),
@@ -172,6 +178,9 @@ def on_meshtastic_mesh_packet(packet):
         logger.info(f"Skipping encrypted packet {packet['id']}")
         return
 
+    if packet.get("id", None) is None:
+        return
+
     unique = redis.set(str(packet["id"]), 1, nx=True, ex=config["flood_expire_time"])
 
     if not unique:
@@ -215,7 +224,7 @@ def on_meshtastic_mesh_packet(packet):
             "hop_limit": packet.get("hopLimit", "unknown"),
             "want_ack": packet.get("wantAck", "unknown"),
             "delayed": packet.get("delayed", "unknown"),
-            "via_mqtt": packet.get("viaMqtt", "unknown"),
+            "via_mqtt": packet.get("viaMqtt", "false"),
         },
     )
     if packet["decoded"]["portnum"] == "NODEINFO_APP":
@@ -241,19 +250,16 @@ def on_meshtastic_mesh_packet(packet):
         )
 
 
-# def on_message(client, userdata, msg):
-#     try:
-#         logger.debug(
-#             f"Received UTF-8 payload `{msg['payload'].decode()}` from `{msg.topic}` topic"
-#         )
-#     except UnicodeDecodeError:
-#         try:
-#             envelope = ServiceEnvelope().parse(msg["payload"])
-#             on_meshtastic_service_envelope(envelope, msg)
-#         except Exception as e:
-#             logger.warning(f"Exception occurred while processing ServiceEnvelope: {e}")
-#     except Exception as e:
-#         logger.warning(f"Exception occurred in on_message: {e}")
+def on_message(client, userdata, msg):
+    try:
+        envelope = mqtt_pb2.ServiceEnvelope.FromString(msg.payload)
+        packet = envelope.packet
+        logger.debug(
+            f"Received UTF-8 payload `{MessageToDict(envelope)}` from `{msg.topic}` topic"
+        )
+        on_native_message(MessageToDict(packet), None)
+    except Exception as e:
+        logger.warning(f"Exception occurred in on_message: {e}")
 
 
 def on_native_message(packet, interface):
@@ -261,7 +267,7 @@ def on_native_message(packet, interface):
         on_meshtastic_mesh_packet(packet)
     except Exception as e:
         logger.error(
-            f"{e} occurred while processing MeshPacket {packet['id']}, please consider submitting a PR/issue on GitHub: `{json.dumps(packet, default=repr)}` {';'.join(traceback.format_exc().splitlines())
+            f"{e} occurred while processing MeshPacket {packet}, please consider submitting a PR/issue on GitHub: `{json.dumps(packet, default=repr)}` {';'.join(traceback.format_exc().splitlines())
 }"
         )
         if "sentry_sdk" in globals():
@@ -277,25 +283,6 @@ def on_native_connection_lost(interface, topic=pub.AUTO_TOPIC):
 
 
 def main():
-    # mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    #
-    # mqttc.on_connect = on_connect
-    # mqttc.on_message = on_message
-    #
-    # if int(config["mqtt_use_tls"]) == 1:
-    #     tlscontext = ssl.create_default_context()
-    #     mqttc.tls_set_context(tlscontext)
-    #
-    # if config["mqtt_username"]:
-    #     mqttc.username_pw_set(config["mqtt_username"], config["mqtt_password"])
-    #
-    # mqttc.connect(
-    #     config["mqtt_address"],
-    #     int(config["mqtt_port"]),
-    #     keepalive=int(config["mqtt_keepalive"]),
-    # )
-    #
-    # mqttc.loop_forever()
     try:
         logger.info(
             "Share ideas and vote for new features https://github.com/artiommocrenco/meshtastic-prometheus-exporter/discussions/categories/ideas"
@@ -303,7 +290,7 @@ def main():
 
         if config.get("meshtastic_interface") not in ["MQTT", "SERIAL", "TCP", "BLE"]:
             logger.fatal(
-                f"Invalid value for MESHTASTIC_INTERFACE: {config['meshtastic_interface']}. Must be one of: MQTT, SERIAL"
+                f"Invalid value for MESHTASTIC_INTERFACE: {config['meshtastic_interface']}. Must be one of: MQTT, SERIAL, TCP, BLE"
             )
             sys.exit(1)
 
@@ -326,9 +313,26 @@ def main():
             iface = meshtastic.ble_interface.BLEInterface(
                 address=config.get("interface_ble_addr"),
             )
-        else:
-            logger.fatal("MQTT temporarily broken")
-            sys.exit(1)
+        elif config.get("meshtastic_interface") == "MQTT":
+            mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+
+            mqttc.on_connect = on_connect
+            mqttc.on_message = on_message
+
+            if int(config["mqtt_use_tls"]) == 1:
+                tlscontext = ssl.create_default_context()
+                mqttc.tls_set_context(tlscontext)
+
+            if config["mqtt_username"]:
+                mqttc.username_pw_set(config["mqtt_username"], config["mqtt_password"])
+
+            mqttc.connect(
+                config["mqtt_address"],
+                int(config["mqtt_port"]),
+                keepalive=int(config["mqtt_keepalive"]),
+            )
+
+            mqttc.loop_forever()
 
         if hasattr(iface, "nodes") and len(iface.nodes) > 0:
             logger.info(
@@ -360,9 +364,6 @@ def main():
             f"Exception occurred while starting up: {';'.join(traceback.format_exc().splitlines())}"
         )
         sys.exit(1)
-
-    while True:
-        time.sleep(1)
 
 
 if __name__ == "__main__":

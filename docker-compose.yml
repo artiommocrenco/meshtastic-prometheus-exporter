@@ -19,7 +19,7 @@ services:
     networks:
       - mesh-bridge
   grafana:
-    image: grafana/grafana-oss:10.4.13
+    image: grafana/grafana-oss:11.5.2
     restart: unless-stopped
     volumes:
       - grafana_data:/var/lib/grafana
@@ -30,21 +30,22 @@ services:
       - "0.0.0.0:3000:3000"
     networks:
       - mesh-bridge
-#  exporter:
-#    build: .
-#    restart: unless-stopped
-#    environment:
-#      - MQTT_ADDRESS=mqtt.meshtastic.org
-#      - MQTT_USE_TLS=0
-#      - MQTT_PORT=1883
-#      - MQTT_KEEPALIVE=15
-##      - MQTT_USERNAME=changeme
-##      - MQTT_PASSWORD=changeme
-#      - MQTT_TOPIC=msh/EU_433/#
-#      - REDIS_URL=redis://redis:6379
-#    networks:
-#      - mesh-bridge
-#  # Redis is being utilised for storing persistent state
+  exporter:
+    image: ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:2.0
+    restart: unless-stopped
+    environment:
+      - MESHTASTIC_INTERFACE=MQTT
+      - MQTT_ADDRESS=mqtt.meshtastic.org
+      - MQTT_USE_TLS=0
+      - MQTT_PORT=1883
+      - MQTT_KEEPALIVE=15
+      - MQTT_USERNAME=meshdev
+      - MQTT_PASSWORD=large4cats
+      - MQTT_TOPIC=msh/EU_433/#
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - mesh-bridge
+#   Redis is being utilised for storing persistent state
   redis:
     image: redis:7
     restart: unless-stopped
