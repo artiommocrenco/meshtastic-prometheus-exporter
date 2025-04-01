@@ -19,7 +19,7 @@ services:
     networks:
       - mesh-bridge
   grafana:
-    image: grafana/grafana-oss:11.5.2
+    image: grafana/grafana-oss:11.6.0
     restart: unless-stopped
     volumes:
       - grafana_data:/var/lib/grafana
