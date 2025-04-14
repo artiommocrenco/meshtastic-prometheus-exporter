@@ -23,7 +23,7 @@ dependencies = [
   "opentelemetry-sdk==1.31.0",
   "paho-mqtt==2.1.0",
   "redis==5.2.1",
-  "meshtastic==2.6.0",
+  "meshtastic==2.6.1",
   "Pypubsub~=4.0.3",
   "sentry-sdk",
 ]
