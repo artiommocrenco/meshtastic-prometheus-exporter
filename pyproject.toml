@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
   "opentelemetry-api==1.32.0",
-  "opentelemetry-exporter-prometheus==0.52b0",
+  "opentelemetry-exporter-prometheus==0.53b0",
   "opentelemetry-sdk==1.32.0",
   "paho-mqtt==2.1.0",
   "redis==5.2.1",
