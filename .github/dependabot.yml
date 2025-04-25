@@ -7,7 +7,7 @@ updates:
     groups:
       opentelemetry:
         patterns:
-         - "opentelemetry*"
+          - "opentelemetry*"
     ignore:
       - dependency-name: "sentry-sdk"
   - package-ecosystem: "pip"
