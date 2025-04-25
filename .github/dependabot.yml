@@ -7,9 +7,7 @@ updates:
     groups:
       opentelemetry:
         patterns:
-          - "opentelemetry-api"
-          - "opentelemetry-exporter-prometheus"
-          - "opentelemetry-sdk"
+         - "opentelemetry*"
     ignore:
       - dependency-name: "sentry-sdk"
   - package-ecosystem: "pip"
