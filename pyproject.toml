@@ -24,8 +24,8 @@ dependencies = [
   "paho-mqtt==2.1.0",
   "redis==5.2.1",
   "meshtastic==2.6.1",
-  "Pypubsub~=4.0.3",
-  "sentry-sdk",
+  "Pypubsub==4.0.3",
+  "sentry-sdk==2.27.0",
 ]
 
 [project.urls]
