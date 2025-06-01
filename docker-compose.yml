@@ -47,7 +47,7 @@ services:
       - mesh-bridge
 #   Redis is being utilised for storing persistent state
   redis:
-    image: redis:7
+    image: redis:8
     restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
