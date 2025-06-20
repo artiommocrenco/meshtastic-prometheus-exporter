@@ -25,7 +25,7 @@ dependencies = [
   "redis==6.2.0",
   "meshtastic==2.6.3",
   "Pypubsub==4.0.3",
-  "sentry-sdk==2.29.1",
+  "sentry-sdk==2.30.0",
 ]
 
 [project.urls]
