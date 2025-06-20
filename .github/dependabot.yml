@@ -8,14 +8,6 @@ updates:
       opentelemetry:
         patterns:
           - "opentelemetry*"
-    ignore:
-      - dependency-name: "sentry-sdk"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    allow:
-      - dependency-name: "sentry-sdk"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
