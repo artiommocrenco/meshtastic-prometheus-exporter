@@ -113,9 +113,9 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           tags: |
-            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ needs.build.outputs.our-version-full }}
-            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:${{ needs.build.outputs.our-version-major }}
-            ghcr.io/artiommocrenco/meshtastic-prometheus-exporter:latest
+            ghcr.io/hacktegic/meshtastic-prometheus-exporter:${{ needs.build.outputs.our-version-full }}
+            ghcr.io/hacktegic/meshtastic-prometheus-exporter:${{ needs.build.outputs.our-version-major }}
+            ghcr.io/hacktegic/meshtastic-prometheus-exporter:latest
 
   publish-to-pypi:
     name: >-
