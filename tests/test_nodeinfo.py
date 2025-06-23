@@ -3,7 +3,7 @@ import json
 from pytest_mock import MockerFixture
 
 
-def mocked_get_decoded_node_metadata_from_redis(redis, node: float, metadata: str):
+def mocked_get_decoded_node_metadata_from_cache(cache, node: float, metadata: str):
     return "mocked"
 
 
@@ -12,10 +12,9 @@ def test_nodeinfo(mocker: MockerFixture):
 
     packet_decoded = json.loads(packet)
 
-    mocker.patch("meshtastic_prometheus_exporter.__main__.redis")
     mocker.patch(
-        "meshtastic_prometheus_exporter.__main__.get_decoded_node_metadata_from_redis",
-        new=mocked_get_decoded_node_metadata_from_redis,
+        "meshtastic_prometheus_exporter.__main__.get_decoded_node_metadata_from_cache",
+        new=mocked_get_decoded_node_metadata_from_cache,
     )
     mock_set_last_heard_timestamp_seconds = mocker.patch.object(
         exporter.meshtastic_node_info_last_heard_timestamp_seconds, "set"

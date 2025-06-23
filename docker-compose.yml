@@ -3,7 +3,6 @@ version: "3"
 volumes:
     prometheus_data:
     grafana_data:
-    redis_data:
 
 services:
   prometheus:
@@ -42,17 +41,6 @@ services:
       - MQTT_USERNAME=meshdev
       - MQTT_PASSWORD=large4cats
       - MQTT_TOPIC=msh/EU_433/#
-      - REDIS_URL=redis://redis:6379
-    networks:
-      - mesh-bridge
-#   Redis is being utilised for storing persistent state
-  redis:
-    image: redis:8
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis_data:/data
     networks:
       - mesh-bridge
 
