@@ -81,7 +81,7 @@ config = {
     "interface_tcp_port": os.environ.get(
         "INTERFACE_TCP_PORT", meshtastic.tcp_interface.DEFAULT_TCP_PORT
     ),
-    "interface_ble_addr": os.environ.get("INTERFACE_BLE_ADDR", "/dev/ttyACM0"),
+    "interface_ble_addr": os.environ.get("INTERFACE_BLE_ADDR", "AA:BB:CC:DD:EE:FF"),
     "mqtt_address": os.environ.get("MQTT_ADDRESS", "mqtt.meshtastic.org"),
     "mqtt_use_tls": os.environ.get("MQTT_USE_TLS", False),
     "mqtt_port": os.environ.get("MQTT_PORT", 1883),

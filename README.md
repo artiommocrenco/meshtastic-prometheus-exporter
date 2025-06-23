@@ -18,12 +18,43 @@ See [SUPPORTED_METRICS.md](SUPPORTED_METRICS.md) for a list of supported metrics
 4. Edit the `docker-compose.yml` file and specify connection details to the MQTT server there too.
 5. In your terminal, run `docker-compose up` (for this, you need Docker installed).
 
-### Use with BLE
+### Use with BLE (Bluetooth Low Energy)
 
-1. Ensure your Meshtastic device supports Bluetooth Low Energy (BLE) and is powered on.
-2. Clone the repo, or download (preferably) [latest release](https://github.com/artiommocrenco/meshtastic-prometheus-exporter/releases/latest), uncompress it and navigate to the directory with the `docker-compose.yml` file.
-3. Edit the `docker-compose.yml` file and set `MESHTASTIC_INTERFACE` to `BLE` and specify the BLE address of your device by setting `INTERFACE_BLE_ADDR` to the address of your device, for example `AA:BB:CC:EE:AA:BB`
-4. In your terminal, run `docker-compose up` (for this, you need Docker installed).
+You can connect to your Meshtastic device via BLE, which is useful if you don't want to use MQTT, Serial, or TCP. This method is tested on Linux (outside Docker), but may work on other platforms as well.
+
+#### Pair your device
+
+Open a terminal and use `bluetoothctl` to pair with your Meshtastic device:
+
+```bash
+bluetoothctl
+[bluetooth]# power on
+[bluetooth]# scan on
+[bluetooth]# pair AA:BB:CC:DD:EE:FF
+# Follow prompts to enter the passkey if requested
+[bluetooth]# disconnect AA:BB:CC:DD:EE:FF
+```
+
+- Replace `AA:BB:CC:DD:EE:FF` with your device's MAC address (find it by name while scanning).
+- Make sure to **disconnect** after pairing. The exporter (and the Meshtastic CLI) need to manage the connection themselves.
+
+#### Test with Meshtastic CLI
+
+Verify BLE connectivity with the Meshtastic CLI:
+
+```bash
+meshtastic -b AA:BB:CC:DD:EE:FF --nodes
+```
+
+If this works, you’re ready to use the exporter.
+
+#### Run the exporter
+
+Set the required environment variables and run the exporter:
+
+```bash
+MESHTASTIC_INTERFACE=BLE INTERFACE_BLE_ADDR=AA:BB:CC:DD:EE:FF meshtastic-prometheus-exporter
+```
 
 ### Use with Serial
 
