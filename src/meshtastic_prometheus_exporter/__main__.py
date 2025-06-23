@@ -50,6 +50,27 @@ from meshtastic_prometheus_exporter.util import (
     save_node_metadata_in_cache,
 )
 
+class ColorFormatter(logging.Formatter):
+    COLORS = {
+        'DEBUG': '\033[36m',    # Cyan
+        'INFO': '\033[32m',     # Green
+        'WARNING': '\033[33m',  # Yellow
+        'ERROR': '\033[31m',    # Red
+        'FATAL': '\033[41m',    # Red background
+        'CRITICAL': '\033[41m', # Red background
+        'RESET': '\033[0m',
+    }
+    def __init__(self, fmt=None, datefmt=None, use_color=True):
+        super().__init__(fmt, datefmt)
+        self.use_color = use_color
+    def format(self, record):
+        level = record.levelname
+        color = self.COLORS.get(level, '') if self.use_color else ''
+        reset = self.COLORS['RESET'] if self.use_color else ''
+        msg = super().format(record)
+        return f"{color}{msg}{reset}"
+
+
 config = {
     "meshtastic_interface": os.environ.get("MESHTASTIC_INTERFACE"),
     "interface_serial_device": os.environ.get("SERIAL_DEVICE", "/dev/ttyACM0"),
@@ -68,6 +89,7 @@ config = {
     "prometheus_server_addr": os.environ.get("PROMETHEUS_SERVER_ADDR", "0.0.0.0"),
     "prometheus_server_port": os.environ.get("PROMETHEUS_SERVER_PORT", 9464),
     "log_level": os.environ.get("LOG_LEVEL", "INFO"),
+    "log_color": os.environ.get("LOG_COLOR", True),
     "flood_expire_time": int(os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60)),
     "enable_sentry": os.environ.get("ENABLE_SENTRY", True),
     "sentry_dsn": os.environ.get(
@@ -83,8 +105,9 @@ logger.setLevel(getattr(logging, config["log_level"].upper()))
 
 handler = logging.StreamHandler(stdout)
 handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s - meshtastic_prometheus_exporter - %(levelname)s - %(message)s"
+    ColorFormatter(
+        "%(asctime)s - meshtastic_prometheus_exporter - %(levelname)s - %(message)s",
+        use_color=bool(config.get("log_color", False))
     )
 )
 
