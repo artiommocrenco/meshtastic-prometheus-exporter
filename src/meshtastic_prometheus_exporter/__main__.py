@@ -69,7 +69,7 @@ config = {
     "prometheus_server_port": os.environ.get("PROMETHEUS_SERVER_PORT", 9464),
     "log_level": os.environ.get("LOG_LEVEL", "INFO"),
     "flood_expire_time": int(os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60)),
-    "enable_sentry": os.environ.get("ENABLE_SENTRY", False),
+    "enable_sentry": os.environ.get("ENABLE_SENTRY", True),
     "sentry_dsn": os.environ.get(
         "SENTRY_DSN",
         "https://d03452fcb06e7141c5c9a1d6ee370e8d@o4508362511286272.ingest.de.sentry.io/4508362517381200",
@@ -89,28 +89,6 @@ handler.setFormatter(
 )
 
 logger.addHandler(handler)
-
-if int(config["enable_sentry"]) == 1:
-    import sentry_sdk
-    from sentry_sdk import add_breadcrumb
-    from sentry_sdk.integrations.logging import LoggingIntegration
-
-    logger.info(
-        "Enabling error reporting via Sentry. Your unmodified MeshPackets will be sent to maintainers of this project in case of runtime errors. To disable, set ENABLE_SENTRY environment variable to 0"
-    )
-
-    sentry_sdk.init(
-        dsn=config.get("sentry_dsn"),
-        traces_sample_rate=1.0,
-        before_breadcrumb=before_breadcrumb,
-        integrations=[
-            LoggingIntegration(level=logging.INFO, event_level=logging.FATAL),
-        ],
-    )
-else:
-    logger.info(
-        "Error reporting via Sentry is disabled. If you want to send your unmodified MeshPackets to maintainers of this project in case of runtime errors, set ENABLE_SENTRY environment variable to 1"
-    )
 
 try:
     reader = PrometheusMetricReader()
@@ -266,11 +244,53 @@ def on_native_connection_lost(interface, topic=pub.AUTO_TOPIC):
     logger.warning(f"Lost connection to device over {type(interface).__name__}")
 
 
+def check_and_save_nodedb(iface, cache):
+    if hasattr(iface, "nodes") and len(iface.nodes) > 0:
+        logger.info(
+            f"NodeDB is available, saving metadata in cache for {len(iface.nodes.values())} nodes"
+        )
+        for n in iface.nodes.values():
+            save_node_metadata_in_cache(
+                cache,
+                n["num"],
+                {
+                    "longName": n["user"]["longName"],
+                    "shortName": n["user"]["shortName"],
+                    "hwModel": n["user"]["hwModel"],
+                },
+            )
+    else:
+        logger.warning(
+            "Device NodeDB is empty or not available. NodeInfo packets are not sent often, so populating local NodeDB (stored in memory) may take from several hours to several days or more."
+        )
+
+
 def main():
     try:
         logger.info(
             "Share ideas and vote for new features https://github.com/hacktegic/meshtastic-prometheus-exporter/discussions/categories/ideas"
         )
+
+        if int(config["enable_sentry"]) == 1:
+            import sentry_sdk
+            from sentry_sdk import add_breadcrumb
+            from sentry_sdk.integrations.logging import LoggingIntegration
+
+            logger.warning(
+                "Enabling error reporting via Sentry. Your unmodified MeshPackets may be sent to maintainers of this project in case of runtime errors. To disable, set ENABLE_SENTRY environment variable to 0"
+            )
+
+            sentry_sdk.init(
+                dsn=config.get("sentry_dsn"),
+                traces_sample_rate=1.0,
+                integrations=[
+                    LoggingIntegration(level=logging.INFO, event_level=logging.FATAL),
+                ],
+            )
+        else:
+            logger.warning(
+                "Sentry error reporting is disabled. To enable automatic error reporting to project maintainers in case of runtime errors, set the ENABLE_SENTRY environment variable to 1."
+            )
 
         if config.get("meshtastic_interface") not in ["MQTT", "SERIAL", "TCP", "BLE"]:
             logger.fatal(
@@ -288,15 +308,18 @@ def main():
             iface = meshtastic.serial_interface.SerialInterface(
                 devPath=config.get("serial_device")
             )
+            check_and_save_nodedb(iface, cache)
         elif config.get("meshtastic_interface") == "TCP":
             iface = meshtastic.tcp_interface.TCPInterface(
                 hostname=config.get("interface_tcp_addr"),
                 portNumber=int(config.get("interface_tcp_port")),
             )
+            check_and_save_nodedb(iface, cache)
         elif config.get("meshtastic_interface") == "BLE":
             iface = meshtastic.ble_interface.BLEInterface(
                 address=config.get("interface_ble_addr"),
             )
+            check_and_save_nodedb(iface, cache)
         elif config.get("meshtastic_interface") == "MQTT":
             mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
@@ -316,29 +339,8 @@ def main():
                 keepalive=int(config["mqtt_keepalive"]),
             )
 
+            check_and_save_nodedb(object(), cache)
             mqttc.loop_forever()
-
-        if hasattr(iface, "nodes") and len(iface.nodes) > 0:
-            logger.info(
-                f"NodeDB is available, saving metadata in cache for {len(iface.nodes.values())} nodes"
-            )
-            for n in iface.nodes.values():
-                save_node_metadata_in_cache(
-                    cache,
-                    n["num"],
-                    {
-                        "longName": n["user"]["longName"],
-                        "shortName": n["user"]["shortName"],
-                        "hwModel": n["user"]["hwModel"],
-                    },
-                )
-        else:
-            logger.warning(
-                "Device NodeDB is empty or not available. NodeInfo are not sent often, so populating local NodeDB (stored in memory) may take from several hours to several days or more."
-            )
-            logger.warning(
-                "Consider first connecting a node with populated NodeDB over Serial, BLE or TCP interface, so that cache is populated with NodeInfo faster."
-            )
 
         while True:
             time.sleep(1)
