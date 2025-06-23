@@ -30,7 +30,7 @@ services:
     networks:
       - mesh-bridge
   exporter:
-    image: ghcr.io/hacktegic/meshtastic-prometheus-exporter:2.3
+    image: ghcr.io/hacktegic/meshtastic-prometheus-exporter:2.4
     restart: unless-stopped
     environment:
       - MESHTASTIC_INTERFACE=MQTT
