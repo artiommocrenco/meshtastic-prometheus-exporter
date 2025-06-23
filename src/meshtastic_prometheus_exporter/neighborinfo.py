@@ -1,12 +1,12 @@
 import logging
 import json
-from meshtastic_prometheus_exporter.util import get_decoded_node_metadata_from_redis
+from meshtastic_prometheus_exporter.util import get_decoded_node_metadata_from_cache
 from meshtastic_prometheus_exporter.metrics import *
 
 logger = logging.getLogger("meshtastic_prometheus_exporter")
 
 
-def on_meshtastic_neighborinfo_app(redis, packet, source_long_name, source_short_name):
+def on_meshtastic_neighborinfo_app(cache, packet, source_long_name, source_short_name):
     neighbor_info = packet["decoded"]["neighborinfo"]
     logger.debug(
         f"Received MeshPacket {packet['id']} with NeighborInfo `{json.dumps(neighbor_info, default=repr)}`"
@@ -23,12 +23,12 @@ def on_meshtastic_neighborinfo_app(redis, packet, source_long_name, source_short
 
         neighbor_info_attributes["neighbor_source"] = neighbor_source or "unknown"
         neighbor_info_attributes["neighbor_source_long_name"] = (
-            get_decoded_node_metadata_from_redis(redis, neighbor_source, "long_name")
+            get_decoded_node_metadata_from_cache(cache, neighbor_source, "long_name")
             if source
             else "unknown"
         )
         neighbor_info_attributes["neighbor_source_short_name"] = (
-            get_decoded_node_metadata_from_redis(redis, neighbor_source, "short_name")
+            get_decoded_node_metadata_from_cache(cache, neighbor_source, "short_name")
             if source
             else "unknown"
         )

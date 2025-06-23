@@ -2,13 +2,12 @@ import logging
 import time
 from meshtastic_prometheus_exporter.metrics import *
 import json
-
-from meshtastic_prometheus_exporter.util import save_node_metadata_in_redis
+from meshtastic_prometheus_exporter.util import save_node_metadata_in_cache
 
 logger = logging.getLogger("meshtastic_prometheus_exporter")
 
 
-def on_meshtastic_nodeinfo_app(redis, packet):
+def on_meshtastic_nodeinfo_app(cache, packet):
     node_info = packet["decoded"]["user"]
 
     logger.debug(
@@ -18,7 +17,7 @@ def on_meshtastic_nodeinfo_app(redis, packet):
     source = packet["decoded"].get("source", packet["from"])
 
     if source:
-        save_node_metadata_in_redis(redis, source, node_info)
+        save_node_metadata_in_cache(cache, source, node_info)
 
     node_info_attributes = {
         "source": source,

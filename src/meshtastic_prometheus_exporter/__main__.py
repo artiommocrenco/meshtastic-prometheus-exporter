@@ -31,7 +31,7 @@ import google.protobuf.message
 import meshtastic.ble_interface
 import meshtastic.serial_interface
 import meshtastic.tcp_interface
-import redis
+from cachetools import TTLCache
 from google.protobuf.json_format import MessageToDict
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.metrics import MeterProvider
@@ -40,17 +40,14 @@ import paho.mqtt.client as mqtt
 from meshtastic.protobuf import mqtt_pb2
 from prometheus_client import start_http_server
 from pubsub import pub
-from redis import BusyLoadingError
-from redis.backoff import ExponentialBackoff
-from redis.retry import Retry
 
 from meshtastic_prometheus_exporter.metrics import *
 from meshtastic_prometheus_exporter.neighborinfo import on_meshtastic_neighborinfo_app
 from meshtastic_prometheus_exporter.nodeinfo import on_meshtastic_nodeinfo_app
 from meshtastic_prometheus_exporter.telemetry import on_meshtastic_telemetry_app
 from meshtastic_prometheus_exporter.util import (
-    get_decoded_node_metadata_from_redis,
-    save_node_metadata_in_redis,
+    get_decoded_node_metadata_from_cache,
+    save_node_metadata_in_cache,
 )
 
 config = {
@@ -70,9 +67,8 @@ config = {
     "mqtt_topic": os.environ.get("MQTT_TOPIC", "msh/EU_433/#"),
     "prometheus_server_addr": os.environ.get("PROMETHEUS_SERVER_ADDR", "0.0.0.0"),
     "prometheus_server_port": os.environ.get("PROMETHEUS_SERVER_PORT", 9464),
-    "redis_url": os.environ.get("REDIS_URL", "redis://localhost:6379"),
     "log_level": os.environ.get("LOG_LEVEL", "INFO"),
-    "flood_expire_time": os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60),
+    "flood_expire_time": int(os.environ.get("FLOOD_EXPIRE_TIME", 10 * 60)),
     "enable_sentry": os.environ.get("ENABLE_SENTRY", False),
     "sentry_dsn": os.environ.get(
         "SENTRY_DSN",
@@ -103,11 +99,6 @@ if int(config["enable_sentry"]) == 1:
         "Enabling error reporting via Sentry. Your unmodified MeshPackets will be sent to maintainers of this project in case of runtime errors. To disable, set ENABLE_SENTRY environment variable to 0"
     )
 
-    def before_breadcrumb(crumb, hint):
-        if crumb["category"] == "redis":
-            return None
-        return crumb
-
     sentry_sdk.init(
         dsn=config.get("sentry_dsn"),
         traces_sample_rate=1.0,
@@ -120,7 +111,6 @@ else:
     logger.info(
         "Error reporting via Sentry is disabled. If you want to send your unmodified MeshPackets to maintainers of this project in case of runtime errors, set ENABLE_SENTRY environment variable to 1"
     )
-
 
 try:
     reader = PrometheusMetricReader()
@@ -136,13 +126,7 @@ try:
     metrics.set_meter_provider(provider)
     meter = metrics.get_meter("meshtastic_prometheus_exporter")
 
-    redis = redis.from_url(
-        config["redis_url"],
-        db=0,
-        protocol=3,
-        retry=Retry(ExponentialBackoff(10, 1), 3),
-        retry_on_error=[BusyLoadingError, ConnectionError, TimeoutError],
-    )
+    cache = TTLCache(maxsize=10000, ttl=config["flood_expire_time"])
 
 except Exception as e:
     logger.fatal(
@@ -181,29 +165,29 @@ def on_meshtastic_mesh_packet(packet):
     if packet.get("id", None) is None:
         return
 
-    unique = redis.set(str(packet["id"]), 1, nx=True, ex=config["flood_expire_time"])
-
+    # Use the packet id as the cache key for deduplication
+    unique = cache.setdefault(str(packet["id"]), True)
     if not unique:
         logger.info(f"Skipping duplicate packet {packet['id']}")
         return
 
     source = packet["decoded"].get("source", packet["from"])
 
-    source_long_name = get_decoded_node_metadata_from_redis(redis, source, "long_name")
-    source_short_name = get_decoded_node_metadata_from_redis(
-        redis, source, "short_name"
+    source_long_name = get_decoded_node_metadata_from_cache(cache, source, "long_name")
+    source_short_name = get_decoded_node_metadata_from_cache(
+        cache, source, "short_name"
     )
-    from_long_name = get_decoded_node_metadata_from_redis(
-        redis, packet["from"], "long_name"
+    from_long_name = get_decoded_node_metadata_from_cache(
+        cache, packet["from"], "long_name"
     )
-    from_short_name = get_decoded_node_metadata_from_redis(
-        redis, packet["from"], "short_name"
+    from_short_name = get_decoded_node_metadata_from_cache(
+        cache, packet["from"], "short_name"
     )
-    to_long_name = get_decoded_node_metadata_from_redis(
-        redis, packet["to"], "long_name"
+    to_long_name = get_decoded_node_metadata_from_cache(
+        cache, packet["to"], "long_name"
     )
-    to_short_name = get_decoded_node_metadata_from_redis(
-        redis, packet["to"], "short_name"
+    to_short_name = get_decoded_node_metadata_from_cache(
+        cache, packet["to"], "short_name"
     )
 
     # https://buf.build/meshtastic/protobufs/file/main:meshtastic/portnums.proto
@@ -228,10 +212,10 @@ def on_meshtastic_mesh_packet(packet):
         },
     )
     if packet["decoded"]["portnum"] == "NODEINFO_APP":
-        on_meshtastic_nodeinfo_app(redis, packet)
+        on_meshtastic_nodeinfo_app(cache, packet)
     else:
         known_source = (
-            get_decoded_node_metadata_from_redis(redis, source, "long_name")
+            get_decoded_node_metadata_from_cache(cache, source, "long_name")
             != "unknown"
         )
 
@@ -246,7 +230,7 @@ def on_meshtastic_mesh_packet(packet):
 
     if packet["decoded"]["portnum"] == "NEIGHBORINFO_APP":
         on_meshtastic_neighborinfo_app(
-            redis, packet, source_long_name, source_short_name
+            cache, packet, source_long_name, source_short_name
         )
 
 
@@ -285,7 +269,7 @@ def on_native_connection_lost(interface, topic=pub.AUTO_TOPIC):
 def main():
     try:
         logger.info(
-            "Share ideas and vote for new features https://github.com/artiommocrenco/meshtastic-prometheus-exporter/discussions/categories/ideas"
+            "Share ideas and vote for new features https://github.com/hacktegic/meshtastic-prometheus-exporter/discussions/categories/ideas"
         )
 
         if config.get("meshtastic_interface") not in ["MQTT", "SERIAL", "TCP", "BLE"]:
@@ -336,11 +320,11 @@ def main():
 
         if hasattr(iface, "nodes") and len(iface.nodes) > 0:
             logger.info(
-                f"NodeDB is available, saving metadata in Redis for {len(iface.nodes.values())} nodes"
+                f"NodeDB is available, saving metadata in cache for {len(iface.nodes.values())} nodes"
             )
             for n in iface.nodes.values():
-                save_node_metadata_in_redis(
-                    redis,
+                save_node_metadata_in_cache(
+                    cache,
                     n["num"],
                     {
                         "longName": n["user"]["longName"],
@@ -350,10 +334,10 @@ def main():
                 )
         else:
             logger.warning(
-                "Device NodeDB is empty or not available. NodeInfo are not sent often, so populating local NodeDB (stored in Redis) may take from several hours to several days or more."
+                "Device NodeDB is empty or not available. NodeInfo are not sent often, so populating local NodeDB (stored in memory) may take from several hours to several days or more."
             )
             logger.warning(
-                "Consider first connecting a node with populated NodeDB over Serial, BLE or TCP interface, so that Redis is populated with NodeInfo faster."
+                "Consider first connecting a node with populated NodeDB over Serial, BLE or TCP interface, so that cache is populated with NodeInfo faster."
             )
 
         while True:
